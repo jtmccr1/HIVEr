@@ -26,6 +26,4 @@ exists for each ENROLLID. We choose the best SPECID defined by
 \examples{
 print(small_meta)
 only_one(small_meta)
-
-
 }
