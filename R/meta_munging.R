@@ -112,7 +112,6 @@ finding_valid<-function(tp){
     return(x)
   }
 
-
   min_onset<-min(tp$onset1)
 
   if(nrow(tp)==1){ # there is only one pair here so it's valid
@@ -201,12 +200,17 @@ getting_tp<-function(meta_one){ # The data frame is all for 1 house. The only cr
           }
         }
       }
+      pairs<-subset(pairs,!(is.na(onset1)) & !(is.na(onset2))) # There is a sample without this data. we can't use it
+      if(nrow(pairs)>0){
       valid_pairs<-finding_valid(pairs)
       valid_pairs<- dplyr::mutate(valid_pairs,# Just adding columns to summarize the pairs.
                                   sequenced_pair=sequenced1==sequenced2 & sequenced2==T,
                                   titer_pair= sequenced1==sequenced2 & sequenced2==T & gc_ul1>1e3 & gc_ul2>1e3,
                                   snv_qualified_pair = snv_qualified1==T & snv_qualified2==T)
       return(valid_pairs)
+      }else{
+        return(pairs[F,])
+      }
       #return(pairs)
     } else {
       return(pairs[F,]) # We need to return a data.frame for each entry. This is empty
