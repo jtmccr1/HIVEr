@@ -1,4 +1,4 @@
-Package: Transmission
+Package: HIVEr
 Title: Analysis of transmission and intrahost iSNV data taken as part of the HIVE cohort.
 Version: 0.0.0.9000
 Authors@R: person("JT", "McCrone", email = "mccrone@umich.edu", role = c("aut", "cre"))

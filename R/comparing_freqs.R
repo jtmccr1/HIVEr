@@ -112,7 +112,9 @@ equal_compare <- function(position){ # take in all the variants found in a sampl
 
 
 get_freqs<-function(pairs,snv){ # take in a data frame of pairs of Ids. Only 1 pair, and a list of snv calls. and output the comparison between the 2. each iSNV and its frequency in both samples
-  snv<-subset(snv,SPECID %in% pairs,select=c(SPECID,mutation,chr,pos,ref,var,freq.var,season,pcr_result)) # just need the snv in the samples we're looking at.
+  snv<-subset(snv,SPECID %in% pairs,select=
+                c(SPECID,mutation,chr,pos,ref,var,freq.var,season,pcr_result))
+  # just need the snv in the samples we're looking at.
   if(nrow(snv)>0){ # There are mutations.
     # We only compare samples from the same season and strain so in each case the reference base in the same
     stopifnot(length(unique(snv$season))==1,length(unique(snv$pcr_result))==1)
