@@ -1,0 +1,16 @@
+Package: Transmission
+Title: Analysis of transmission and intrahost iSNV data taken as part of the HIVE cohort.
+Version: 0.0.0.9000
+Authors@R: person("JT", "McCrone", email = "mccrone@umich.edu", role = c("aut", "cre"))
+Description: The goal of this package is make the functions and code used in my analysis of the HIVE
+Depends: R (>= 3.4.0)
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Imports: dplyr,
+    ggplot2,
+    magrittr,
+    tidyverse,
+    extrafont
+RoxygenNote: 6.0.1
+Suggests: testthat
