@@ -16,6 +16,11 @@
 #' @examples
 #'print(small_meta)
 #'only_one(small_meta)
+#'
+#' @importFrom rlang quo
+#' @importFrom dplyr enquo
+#' @importFrom dplyr quo_name
+
 #'@export
 #'
 
@@ -78,7 +83,6 @@ only_one<-function(meta_df){ #  one per person
 #'
 #' @describeIn getting_tp
 #' @export
-
 
 
 finding_valid<-function(tp){
@@ -224,4 +228,154 @@ getting_tp<-function(meta_one){ # The data frame is all for 1 house. The only cr
 }
 
 
+#' Get all ENROLLID that have two SPECID in a season with same strain..
+#'
+#' This is useful to get the samples we have intrahost data for.
+#'
+#' @param df A data frame with at least ENROLLID, SPECID, season, and pcr_result. Each row is an isolate.
+#' @param samples The number of samples required to keep ENROLLID default = 2.
+#' @return the a data frame with only ENROLLID with multiple isolates - each row is an isolate
+#' @examples
+#' # There  one shared iSNV here and one fixed difference the rest are the same.
+#' print(small_meta)
+#'
+#' get_double(small_meta)
+#'
+#' @export
+#'
+#'
+#'
 
+get_double<-function(df,samples=2){
+  counts <- df %>%
+    dplyr::group_by(ENROLLID,pcr_result) %>%
+    dplyr::summarize(samp = length(unique(SPECID)))
+
+  doubles<- counts %>% dplyr::filter(samp==samples) %>%
+    dplyr::select(-samp)
+
+
+  out <- merge(df,doubles,by =c("ENROLLID","pcr_result"),all.y = T )
+  return(out)
+}
+
+
+
+
+two_one<-function(df,columns,sn){
+  num<-paste0(columns,as.character(sn))
+  num_df<-dplyr::select(df,num)
+  for(i in 1:length(columns)){
+    names(num_df)[names(num_df)==num[i]]<-columns[i]
+  }
+  return(num_df)
+}
+
+
+
+#' Convert short paired data to long paired data.
+#'
+#' This function takes in a data frame containing short paired data with one
+#' row / pair and outputs one row / ENROLLID in the pair. If the data does not
+#' contain a column named 'pair_id' one will be added with a unqiue number for
+#' each pair. This is currently groups by pair_id
+#'
+#' @param df A data frame with obseravtions to be split
+#' @param columns columns to be added. They must be equal to names that already exist
+#' in every way except lacking either a 1 or a 2 at the end.
+#'
+#' @return the a data frame with a row for each ENROLLID
+#' @examples
+#' one_meta<-only_one(small_meta)
+#' tp<-getting_tp(one_meta)
+#' longform_pairs(tp)
+#' @export
+#'
+#'
+#'
+
+longform_pairs<-function(df,columns = c("ENROLLID","onset","gc_ul","sequenced")){
+  if(!("pair_id" %in% names(df))){
+    df$pair_id<-1:nrow(df)
+  }
+  lp_helper<-function(df,columns){
+    # we want to add single columns capturing the data held in two columns here.
+    id<-unique(df$pair_id)
+    one<-two_one(df,columns,1)
+    two<-two_one(df,columns,2)
+    out<-rbind(one,two)
+    out$pair_id<-id
+
+    one_columns<-paste0(columns,"1")
+    two_columns<-paste0(columns,"2")
+
+    extra_col<-c(one_columns,two_columns)
+    df_other_rows<-dplyr::select(df,-dplyr::one_of(!!extra_col))
+
+    out<-merge(out,df_other_rows,by="pair_id")
+
+    if(out$onset[1]<out$onset[2]){
+      out$case<-c("Donor","Recipient")
+    } else if(out$onset[1]>out$onset[2]){
+      out$case<-c("Recipient","Donor")
+    }else{
+      out$case<-c("Unknown","Unknown")
+    }
+    return(out)
+  }
+  out <- df %>% dplyr::group_by(pair_id) %>%
+    dplyr::do(lp_helper(.,columns))
+
+  return(out)
+
+}
+
+#' Convert long paired data to short paired data.
+#'
+#' This function takes in a data frame containing long paired data with one
+#' row / sample in pair and outputs one row / pair. It is on the user to supply
+#' grouping columns such that only 2 samples will match the groups. (we don't
+#' handled more than 2 cases currently). If there are any columns that contain
+#' data not shared by the sample pair they must be included or removed prior to using
+#' the function
+#'
+#' @param df A data frame with obseravtions to be combined
+#' @param columns columns to be used in combination. They must exist and new columns
+#' will be made appending 1 and 2 to these names
+#' @param ... unquoted grouping columns
+#' @return the a data frame with a row for each pair
+#' @examples
+#' get_double(small_meta)->small_doub
+#' small_doub<-dplyr::select(small_doub,ENROLLID,pcr_result,HOUSE_ID,SPECID,onset,collect,vaccination_status,DPI,season,gc_ul,sequenced,home_collected,snv_qualified)
+#' columns = c("SPECID","onset","collect","vaccination_status",
+#'            "DPI","gc_ul","sequenced","home_collected","snv_qualified")
+#' short_pairs(small_doub,columns,ENROLLID,HOUSE_ID,pcr_result,season)
+#' @export
+
+
+short_pairs<-function(df,columns, ... ){
+  short_helper<-function(x){
+    x<-x[order(x$collect,-x$home_collected,decreasing = F),] # This puts the home sample first if they are taken on the same day.
+
+    for(col in columns){
+      for(i in 1:2){
+        c<-paste0(col,i)
+        x[c] <- x[i,col]
+
+      }
+    }
+  x<-dplyr::select(x,-dplyr::one_of(!!columns))
+  # we wil remove an unneeded row we want to make sure we aren't removing data.
+  if(any(x[1,]!=x[2,])) stop("One or more columns were not the same.\n remove them.")
+  return(x[1,])
+  }
+
+  group_var= dplyr::quos( ... )
+
+  out<- df %>% dplyr::group_by(!!!group_var) %>%
+    dplyr::do(short_helper(.))
+
+  return(out)
+
+
+}

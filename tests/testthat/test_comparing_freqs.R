@@ -90,8 +90,8 @@ position.6 <- data.frame(ENROLLID1 = c(300294),
                          ref = c("C"),
                          var = c("A"),stringsAsFactors = F)
 test_that("Error if something is wrong with the data", {
-  expect_error(equal_compare(position.4))
-  expect_error(equal_compare(position.5))
+  expect_warning(equal_compare(position.4))
+  expect_warning(equal_compare(position.5))
   expect_error(equal_compare(position.6))
 
 
@@ -114,5 +114,9 @@ freq_out = data.frame(mutation =c("PB2_G58A","PB2_G58G","PB2_G1099A","PB2_G1099G
 
 test_that("Getting frequencies",{
   expect_equal(get_freqs(c("HS1595","HS1563"),small_isnv),freq_out)
+})
+
+test_that("Getting distance",{
+  expect_equal(dist_tp(c("HS1595","HS1563"),small_isnv),2.12)
 })
 
