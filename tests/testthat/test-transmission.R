@@ -1,4 +1,7 @@
 context("Testing functions that deal with transmission.")
+set.seed(11)
+# This ensures we don't get a warning from the logit functions due
+# to not having a diverse enough freq1 set up in the attatched data
 
 d<-small_meta$collect[4]+1
 small_meta$iSNV<-small_meta$iSNV<-round(runif(nrow(small_meta),1,10),0)
