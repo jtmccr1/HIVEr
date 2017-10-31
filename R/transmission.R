@@ -7,6 +7,7 @@
 #' (before transmission for donor if possible)
 #'
 #' 2) Titer is the tie breaker when applicable.
+#'
 #' 3) If no iSNV were found in a donor sample
 #'
 #' @param meta data frame with meta data con
@@ -80,9 +81,8 @@ get_close<-function(meta,date,enrollid,case,iSNV=T){
 #' @param SPECIDs A list of SPECIDs that can be used
 #' @return a data frame with columns freq1, trial, and probability of transmission.
 #' @examples
-#'
-#' d<-small_meta$collect[4]+1
-#' get_close(small_meta,d,enrollid = "50001",case = "Donor",iSNV = T)
+#' print(small_comunity.comp)
+#' com_sample_trans(small_community.comp,2,c("HS1595","MH0000"))
 #' @export
 #'
 com_sample_trans<-function(data,runs,SPECIDs,test=F){
@@ -92,41 +92,97 @@ com_sample_trans<-function(data,runs,SPECIDs,test=F){
     return(df[sample(nrow(df),n),])
   }
 
-  start.df <- data.frame(freq1=seq(0.02,1,0.02))
-  # We will smooth every 2%
-  model.df<-data.frame(freq1=rep(seq(0.02,1,0.02),runs),
-                      trial=rep(1:runs,each=length(seq(0.02,1,0.02))),
+  # It may be the case that there isn't another community pair for a given
+  # donor. We identify it here. remove it and warn the user.
+  orig_SPECID<-SPECIDs
+
+  SPECIDs<-SPECIDs[SPECIDs %in% data$SPECID1]
+
+  if(length(orig_SPECID)>length(SPECIDs)){
+    warning(paste0("Removed donor SPECID: ",orig_SPECID[!(orig_SPECID%in%SPECIDs)]," Not in data\n"))
+  }
+
+  # How many comparisons are made.
+  comparisons <- data.frame(SPECID1=rep(SPECIDs,times=runs),
+                             trial=rep(1:runs,times=length(SPECIDs)),
+                             pair_id=NA)
+
+
+  # we want to set up the data.frame to hold the results here.
+  row_df <- data %>% dplyr::group_by(SPECID1)%>%
+   dplyr::summarise(mutations = length(unique(mutation)))
+  row_df<- row_df %>% dplyr::group_by(SPECID1)%>%
+    dplyr::mutate(mult = length(which(SPECIDs ==SPECID1)),
+                  rows=mult*mutations)
+
+  rows_needed<-sum(row_df$rows)
+
+  model.df<-data.frame(freq1=rep(NA,rows_needed*runs),
+                      trial=rep(1:runs,each=rows_needed),
                       prob=NA)
-  #print(model.df)
+
   for (i in 1:runs){
     # We only want pairings with an eligable donor
     possible_pairs <- subset(data,SPECID1 %in% SPECIDs)
     #pick one for each ENROLLID
 
-    pairings <- possible_pairs %>%
-                dplyr::group_by(SPECID1) %>%
-                dplyr::summarize(pair_id = sample(.data$pair_id,1))
+    # This ensures we pick different recipients for each donor within a run
+    pass_unique_test<-F
+    while(!pass_unique_test){
+    pairings<-data.frame(SPECID1=SPECIDs)
+    pairings <- pairings %>%
+                dplyr::rowwise() %>%
+                dplyr::mutate(pair_id = base::sample(possible_pairs$pair_id[possible_pairs$SPECID1==.data$SPECID1],1,replace=F))
 
-    #print(pairings)
+    unique_test<-dplyr::ungroup(pairings) %>% dplyr::group_by(SPECID1) %>%
+      dplyr::summarise(unique= length(pair_id)==length(unique(pair_id)))
+
+    pass_unique_test<-all(unique_test$unique==T)
+
+    }
+
     sampled_data <- subset(data,pair_id %in% pairings$pair_id)
-    #print(sampled_data)
 
-    #smooths the data.
-    logit<-glm(formula =found~freq1,family=binomial(logit),data=sampled_data) # Fit a logit model to the data
+        logit<-glm(formula =found~freq1,family=binomial(logit),data=sampled_data) # Fit a logit model to the data
     #print(logit)
-    # Get the predictions on using the start frequencies
+    # Get the fitted values on using the start frequencies
 
-    final.df<-dplyr::mutate(start.df,
-                     prob=predict(logit,data.frame(freq1=freq1),
-                                  type="response"),trial=i)
+    sampled_data$prob<-logit$fitted.values
+
+        # final.df<-dplyr::mutate(start.df,
+    #                  prob=predict(logit,data.frame(freq1=freq1),
+    #                               type="response"),trial=i)
     #print(final.df)
     #print(model.df)
     #data.sampled$prob = logit$fitted.values
     #final.df=data.frame(freq1=data.sampled$freq1,prob=data.sampled$prob,trial=i) # Get the predictions on using the start frequencies
 
     ind<-which(model.df$trial==i)
-    model.df$prob[ind]<-final.df$prob# add to the final output
+    model.df$prob[ind]<-sampled_data$prob# add to the final output
+    model.df$freq1[ind]<-sampled_data$freq1
+
+
+    #record how many unique pairings tested.
+    #
+    comp_ind<-which(comparisons$trial==i)
+    # We want the pair data to be in the same order as the initial coparison data frame
+    pairings<-pairings[order(match(pairings$SPECID1,SPECIDs)),]
+    comparisons$pair_id[comp_ind]<-pairings$pair_id
+
+
   }
+
+  comparison_meta<-comparisons %>% dplyr::group_by(SPECID1)%>%
+    dplyr::summarise(comparisons = length(unique(pair_id)))
+
+
+  message(paste0("Number donor SPECID used : ",nrow(comparison_meta),"\n",
+                 "Number unique pairs made : ",sum(comparison_meta$comparisons),"\n",
+                 "Mean unique pairs / donor : ",mean(comparison_meta$comparisons),"\n",
+                 "Mininum pairs / donor : ", min(comparison_meta$comparisons)," for SPECID ",
+                 comparison_meta$SPECID1[comparison_meta$comparisons==min(comparison_meta$comparisons)],"\n"
+                 ))
+
   if(!test){
   return(model.df)
   }

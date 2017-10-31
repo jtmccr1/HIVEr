@@ -23,7 +23,6 @@ from data with a donor ENROLLID provided in the list and evalute the probability
 of transmission. Smoothing every 2%.
 }
 \examples{
-
-d<-small_meta$collect[4]+1
-get_close(small_meta,d,enrollid = "50001",case = "Donor",iSNV = T)
+print(small_comunity.comp)
+com_sample_trans(small_community.comp,2,c("HS1595","MH0000"))
 }

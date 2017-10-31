@@ -31,6 +31,7 @@ the date when specified. The criteria is
 (before transmission for donor if possible)
 
 2) Titer is the tie breaker when applicable.
+
 3) If no iSNV were found in a donor sample
 }
 \examples{
