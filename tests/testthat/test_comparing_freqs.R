@@ -120,3 +120,9 @@ test_that("Getting distance",{
   expect_equal(dist_tp(c("HS1595","HS1563"),small_isnv),2.12)
 })
 
+
+small_freqs<-get_freqs(c("HS1595","HS1563"),small_isnv)
+test_that("polishes frequency data to polymorphic sites",{
+  expect_equal(nrow(setdiff(polish_freq(small_freqs,0.02,freq1),polish_freq(small_freqs,0.02,freq2))),0)
+  expect_equal(nrow(setdiff(freq_out[3:4,],polish_freq(small_freqs,min_freq = 0.02,freq2))),0)
+})

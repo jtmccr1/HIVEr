@@ -21,10 +21,14 @@ contains a minority variant at some position that in sample 2 is characterized b
  sample 2 is the plasmid reference allele there will be no record of it in the data frame. This function adds that
  data so that it is clear the samples contain the same major allele (or different major alleles if that is the case).
  If both samples contain only the major allele and it is the same allele an empty data frame is returned as we are not
- interested in cases were the alleles are the same and there is no minor allele. If there is only one allel
- but we might expect two given the frequency then we warn the user. This can happen
+ interested in cases were the alleles are the same and there is no minor allele.
+}
+\details{
+If there is only one allele but we might expect two given the frequency then we warn the user. This can happen
  when one allele is removed because of poor quality. We do not adjust the frequency of the
- remaining alleles in this case.
+ remaining alleles in this case. If the present allele matches the only allele in the other sample
+ then the position is removed as the data suggests both samples have only one allele and
+ the same allele (at that).
 }
 \examples{
 # Here we add the reference base in the correct row.

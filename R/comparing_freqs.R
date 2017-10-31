@@ -8,10 +8,16 @@
 #'  sample 2 is the plasmid reference allele there will be no record of it in the data frame. This function adds that
 #'  data so that it is clear the samples contain the same major allele (or different major alleles if that is the case).
 #'  If both samples contain only the major allele and it is the same allele an empty data frame is returned as we are not
-#'  interested in cases were the alleles are the same and there is no minor allele. If there is only one allel
-#'  but we might expect two given the frequency then we warn the user. This can happen
+#'  interested in cases were the alleles are the same and there is no minor allele.
+#'
+#'
+#'  If there is only one allele but we might expect two given the frequency then we warn the user. This can happen
 #'  when one allele is removed because of poor quality. We do not adjust the frequency of the
-#'  remaining alleles in this case.
+#'  remaining alleles in this case. If the present allele matches the only allele in the other sample
+#'  then the position is removed as the data suggests both samples have only one allele and
+#'  the same allele (at that).
+#'
+#'
 #'
 #'
 #' @param position A data frame containing one row for each base called at a loci for the two samples in question.
@@ -63,14 +69,12 @@ equal_compare <- function(position){ # take in all the variants found in a sampl
   pos_sum_1 <- sum(position$freq1) # What is the sum of all variants at this site in the first sample
   pos_sum_2 <-  sum(position$freq2) # What is the sum of all variants at this site in the second sample
   stopifnot(pos_sum_1+pos_sum_2>0)#"No variant at this position - something terrible happend somewhere"
-  if((pos_sum_1> 0 & min(position$freq1)<0.98 & pos_sum_1==min(position$freq1))) warning(paste("There appears to only be one allele in sample",
-                                                                                              position$SPECID1,
-                                                                                              "Its frequency is :",
-                                                                                              position$freq1), "\n")
-  if((pos_sum_2> 0 & min(position$freq2)<0.98 & pos_sum_2==min(position$freq2))) warning(paste("There appears to only be one allele in sample",
-                                                                                               position$SPECID2,
-                                                                                               "Its frequency is :",
-                                                                                               position$freq2),"\n") # only a minor variant called
+  if((pos_sum_1> 0 & min(position$freq1)<0.95 & pos_sum_1==min(position$freq1)))
+    warning(paste("There is only 1 allele in sample",position$SPECID1,
+    "Its frequency is :",position$freq1), " it may be removed.\n")
+  if((pos_sum_2> 0 & min(position$freq2)<0.95 & pos_sum_2==min(position$freq2)))
+    warning(paste("There appears to only be one allele in sample",position$SPECID2,
+     "Its frequency is :", position$freq2)," it may be removed.\n") # only a minor variant called
 
   if(pos_sum_1==0){ # there isn't a variant in the first sample.The reference is fixed there. the sum of nothing is 0. Try it.  sum() =0.  sum(c()) =0
 
@@ -204,40 +208,49 @@ dist_tp<-function(pairs,snv){
 #' Polishing compared frequencies.
 #'
 #' This function polishes a frequency comparision data frame. The output
-#' is a subset with of the initial data frame only containing loci that are
-#' polymorphic given both samples. Between the two samples there must be two
-#' nucletides.
+#' is a subset  of the initial data frame only containing loci that are
+#' polymorphic given both samples. ie. between the two samples there must be two
+#' nucleotides. This function is needed because there are cases where a major allele
+#' exists but there is not minor allele because of sequencing error. In much of the analysis
+#' we are only interested in polymophisms. This function ensures that is all we observe.
 #'
 #' @param df data frame with columns freq1 and freq2
 #' @param ... the minumun frequency allowed. frequencies below will be set to 0. those above to 1
-#' @param relative c("freq1","freq2,NA) only look at sites with frequency above 0 at freq1,freq2 or niether.
+#' @param relative c("freq1","freq2") only look at sites with frequency above 0 at freq1,freq2 or niether.
 #' @return a data frame with polymophoric loci
 #' @examples
-#'
+#' get_freqs(c("HS1595","HS1563"),small_isnv)->small_dups
 #'
 #' @export
 
 polish_freq<-function(df,min_freq,relative){
   rel_quo<-enquo(relative)
-  print(rel_quo)
+  min_freq_quo<-enquo(min_freq)
   mess = paste0("Requiring polymophic at least in ", quo_name(rel_quo))
   message(mess)
-  x<-rlang::expr(UQ(rel_quo)>0)
-  print(quo(dplyr::filter(df,UQ(x))))
-  df<-dplyr::filter(df,UQ(x))
+
+  first_cut<-rlang::expr(UQ(rel_quo)>0)
+  second_cut<-rlang::expr(UQ(rel_quo)>UQ(min_freq_quo))
+
+  #print(quo(dplyr::filter(df,UQ(second_cut))))
+  if(quo_name(rel_quo) %in% c("freq1","freq2")){
+  df<-dplyr::filter(df,UQ(first_cut))
+  }else{
+    warning("Not restrincting to sites polymorphic in at least one sample")
+  }
+  df<-dplyr::filter(df,UQ(second_cut))
+
+  if(grepl("1",quo_name(rel_quo))){
+  counts<- df %>% dplyr::group_by(chr,pos,SPECID1) %>% ## change to SPECID2 if needed.
+    dplyr::summarize(alleles=length(chr))
+
+  }else if(grepl("2",quo_name(rel_quo))){
+    counts<- df %>% dplyr::group_by(chr,pos,SPECID2) %>% ## change to SPECID2 if needed.
+      dplyr::summarize(alleles=length(chr))
+  }
+  df<-merge(df,subset(counts,alleles==2,select=-c(alleles)),all.x=F,all.y=T)
+
+  # Ensure frequencies in freq2 are either 0 or 1 if there are no polymorphism
+
   return(df)
   }
-
-# intra_freq.comp<-subset(intra_freq,freq1>0.02 & freq1<0.98)
-# intra_freq.comp<-plyr::ddply(intra_freq.comp,~chr+pos+SPECID1,function(x) if(nrow(x)>1){return(x)}) # only polymorphic sites in sample 1
-# # Now if one of the freq2 at a given site is <2% we must set the other to 1 in order to treat the first and second samples equally.
-#
-# intra_freq.comp<-plyr::ddply(intra_freq.comp,~chr+pos+SPECID2, function(x){ # comp should have 2 rows/mutation/person one for each allele
-#   if(min(x$freq2<0.02)){
-#     stopifnot(max(x$freq2)>0.98) # This is to make sure we are not setting a major allele to 1 when the major allele is in the polymorphic range - This could happen given some of the pecularieties with the allelic frequencies and deepSNV (i.e. There may be some sequencing errors that make up the missing frequencies)
-#     x$freq2[x$freq2==max(x$freq2)]<-1
-#     x$freq2[x$freq2==min(x$freq2)]<-0
-#   }
-#   return(x)
-# })
-# }

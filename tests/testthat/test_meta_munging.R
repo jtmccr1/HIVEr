@@ -37,6 +37,10 @@ test_that("Identifies intahost pairs",{
   expect_equal(nrow(intra),7*2)
 })
 
+
+
+
+
 longform_pairs(tp)->long_tp
 
 test_that("longform test",{
