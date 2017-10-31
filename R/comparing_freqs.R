@@ -25,7 +25,7 @@
 #' a new entry in the data frame, or an empty data frame (in the case where the is only one allele and it is fixed in both samples)
 #' @examples
 #' # Here we add the reference base in the correct row.
-#' position <- data.frame(ENROLLID1 = c(300294,300294),
+#' position <- tibble(ENROLLID1 = c(300294,300294),
 #'                        ENROLLID2 = c(300293,300293),
 #'                        mutation = c("M_C806A","M_C806C"),
 #'                        freq1 = c(0,0),
@@ -33,12 +33,12 @@
 #'                        chr = c("M","M"),
 #'                        pos = c(806,806),
 #'                        ref = c("C","C"),
-#'                        var = c("A","C"),stringsAsFactors = F)
+#'                        var = c("A","C"))
 #' print(position)
 #' equal_compare(position)
 #'
 #' # Here we add a row when the major alleles differ.
-#' position <- data.frame(ENROLLID1 = c(300294),
+#' position <- tibble(ENROLLID1 = c(300294),
 #'                        ENROLLID2 = c(300293),
 #'                        mutation = c("M_C806A"),
 #'                        freq1 = c(0),
@@ -46,12 +46,12 @@
 #'                        chr = c("M"),
 #'                        pos = c(806),
 #'                        ref = c("C"),
-#'                        var = c("A"),stringsAsFactors = F)
+#'                        var = c("A"))
 #' print(position)
 #' equal_compare(position)
 #'
 #' # Here we remove the entry as the samples are the same
-#' position <- data.frame(ENROLLID1 = c(300294),
+#' position <- tibble(ENROLLID1 = c(300294),
 #'                        ENROLLID2 = c(300293),
 #'                        mutation = c("M_C806A"),
 #'                        freq1 = c(1),
@@ -59,7 +59,7 @@
 #'                        chr = c("M"),
 #'                        pos = c(806),
 #'                        ref = c("C"),
-#'                        var = c("A"),stringsAsFactors = F)
+#'                        var = c("A"))
 #' print(position)
 #' equal_compare(position)
 #' @export
@@ -167,13 +167,13 @@ get_freqs<-function(pairs,snv){
       return(all.freq)
     }
     else{ # some snv were initially present (before frequency filter) but after taking into account differences in inference the samples are the same.
-      x<-data.frame(mutation=NA,freq1=NA,freq2=NA,SPECID1=NA,
+      x<-tibble(mutation=NA,freq1=NA,freq2=NA,SPECID1=NA,
                     SPECID2=NA,chr=NA,ref=NA,"pos"=NA,var=NA)
       return(x[F,])
     }
   }
   else{ # No variants found in either sample
-    x<-data.frame(mutation=NA,freq1=NA,freq2=NA,SPECID1=NA,
+    x<-tibble(mutation=NA,freq1=NA,freq2=NA,SPECID1=NA,
                   SPECID2=NA,chr=NA,ref=NA,"pos"=NA,var=NA)
   return(x[F,])
   }

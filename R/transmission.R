@@ -70,7 +70,7 @@ get_close<-function(meta,date,enrollid,case,iSNV=T){
   }
 }
 
-#' Randomly sample a transmission data.frame based on a list
+#' Randomly sample a transmission tibble based on a list
 #' of donors
 #'
 #' Each run we will ramdomly choose one of the possible transmission pairs
@@ -103,12 +103,12 @@ com_sample_trans<-function(data,runs,SPECIDs,test=F){
   }
 
   # How many comparisons are made.
-  comparisons <- data.frame(SPECID1=rep(SPECIDs,times=runs),
+  comparisons <- tibble(SPECID1=rep(SPECIDs,times=runs),
                              trial=rep(1:runs,times=length(SPECIDs)),
                              pair_id=NA)
 
 
-  # we want to set up the data.frame to hold the results here.
+  # we want to set up the tibble to hold the results here.
   row_df <- data %>% dplyr::group_by(SPECID1)%>%
    dplyr::summarise(mutations = length(unique(mutation)))
   row_df<- row_df %>% dplyr::group_by(SPECID1)%>%
@@ -117,7 +117,7 @@ com_sample_trans<-function(data,runs,SPECIDs,test=F){
 
   rows_needed<-sum(row_df$rows)
 
-  model.df<-data.frame(freq1=rep(NA,rows_needed*runs),
+  model.df<-tibble(freq1=rep(NA,rows_needed*runs),
                       trial=rep(1:runs,each=rows_needed),
                       prob=NA)
 
@@ -129,7 +129,7 @@ com_sample_trans<-function(data,runs,SPECIDs,test=F){
     # This ensures we pick different recipients for each donor within a run
     pass_unique_test<-F
     while(!pass_unique_test){
-    pairings<-data.frame(SPECID1=SPECIDs)
+    pairings<-tibble(SPECID1=SPECIDs)
     pairings <- pairings %>%
                 dplyr::rowwise() %>%
                 dplyr::mutate(pair_id = base::sample(possible_pairs$pair_id[possible_pairs$SPECID1==.data$SPECID1],1,replace=F))
@@ -150,12 +150,12 @@ com_sample_trans<-function(data,runs,SPECIDs,test=F){
     sampled_data$prob<-logit$fitted.values
 
         # final.df<-dplyr::mutate(start.df,
-    #                  prob=predict(logit,data.frame(freq1=freq1),
+    #                  prob=predict(logit,tibble(freq1=freq1),
     #                               type="response"),trial=i)
     #print(final.df)
     #print(model.df)
     #data.sampled$prob = logit$fitted.values
-    #final.df=data.frame(freq1=data.sampled$freq1,prob=data.sampled$prob,trial=i) # Get the predictions on using the start frequencies
+    #final.df=tibble(freq1=data.sampled$freq1,prob=data.sampled$prob,trial=i) # Get the predictions on using the start frequencies
 
     ind<-which(model.df$trial==i)
     model.df$prob[ind]<-sampled_data$prob# add to the final output

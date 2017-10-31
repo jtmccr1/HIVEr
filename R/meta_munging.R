@@ -81,7 +81,6 @@ only_one<-function(meta_df){ #  one per person
 #' @param tp A data frame containing one row for each possible transmission pair
 #' @return A data frame with one row for each possible transmission pair
 #'
-#' @describeIn getting_tp
 #' @export
 
 
@@ -156,6 +155,7 @@ finding_valid<-function(tp){
 #' @examples
 #' one_meta<-only_one(small_meta)
 #' getting_tp(one_meta)
+#'@importFrom dplyr tibble as_tibble
 #'@export
 #'
 
@@ -166,10 +166,10 @@ getting_tp<-function(meta_one){ # The data frame is all for 1 house. The only cr
     house<-unique(df$HOUSE_ID)
     stopifnot(length(house)==1,length(unique(df$pcr_result))==1) # Verify only 1 house here and only 1 strain
     if(length(unique(df$ENROLLID))!=length(unique(df$SPECID))) stop("Please supply a data frame with only one entry/ENROLLID")
-    pairs<-data.frame(ENROLLID1=NA,ENROLLID2=NA,onset1=NA,onset2=NA,transmission=NA,
+    pairs<-tibble(ENROLLID1=NA,ENROLLID2=NA,onset1=NA,onset2=NA,transmission=NA,
                       sequenced1=NA,sequenced2=NA,gc_ul1=NA,gc_ul2=NA,
                       snv_qualified1=NA,snv_qualified2=NA,
-                      valid=NA,double=NA)
+                      valid=NA,double=NA)[F,]
     # verify more than 1 person in the household
     if(length(unique(df$ENROLLID))>1){
 
@@ -193,14 +193,14 @@ getting_tp<-function(meta_one){ # The data frame is all for 1 house. The only cr
           transmission=onset2-1
           if((onset2-onset1)<=7){ #if onset is withing a week of each other
 
-            out<-data.frame(ENROLLID1=ENROLLID1,ENROLLID2=ENROLLID2,
+            out<-tibble(ENROLLID1=ENROLLID1,ENROLLID2=ENROLLID2,
                             onset1=onset1,onset2=onset2,
                             transmission=transmission,
                             sequenced1=sequenced1,sequenced2=sequenced2,
                             gc_ul1=gc_ul1,gc_ul2=gc_ul2,
                             snv_qualified1=snv_qualified1,snv_qualified2=snv_qualified2,
-                            valid=F,double=F) # all start as not valid
-            pairs<-rbind(subset(pairs,!(is.na(ENROLLID1))),out)# We don't want that first line with the NA this just adds the out data frame with the transmission pair if it meets the onset date
+                            valid=F,double=F,stringsAsFactors=F) # all start as not valid
+            pairs<-rbind(pairs,out)# We don't want that first line with the NA this just adds the out data frame with the transmission pair if it meets the onset date
           }
         }
       }
@@ -213,10 +213,18 @@ getting_tp<-function(meta_one){ # The data frame is all for 1 house. The only cr
                                   snv_qualified_pair = snv_qualified1==T & snv_qualified2==T)
       return(valid_pairs)
       }else{
+        pairs<-dplyr::mutate(pairs,# Just adding columns to summarize the pairs.
+                             sequenced_pair=NA,
+                             titer_pair= NA,
+                             snv_qualified_pair = NA)
         return(pairs[F,])
       }
       #return(pairs)
     } else {
+      pairs<-dplyr::mutate(pairs,# Just adding columns to summarize the pairs.
+                           sequenced_pair=NA,
+                           titer_pair= NA,
+                           snv_qualified_pair = NA)
       return(pairs[F,]) # We need to return a data.frame for each entry. This is empty
     }
   }
