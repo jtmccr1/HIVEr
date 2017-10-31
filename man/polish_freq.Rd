@@ -25,6 +25,6 @@ exists but there is not minor allele because of sequencing error. In much of the
 we are only interested in polymophisms. This function ensures that is all we observe.
 }
 \examples{
-
+get_freqs(c("HS1595","HS1563"),small_isnv)->small_dups
 
 }
