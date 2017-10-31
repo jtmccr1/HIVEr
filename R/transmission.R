@@ -53,14 +53,14 @@ get_close<-function(meta,date,enrollid,case,iSNV=T){
       # there were a few in the second then we take the second
       warning(paste0(case," SPECID ", id_snv$SPECID[2], "  being used for ENROLLID ",
                      id_snv$ENROLLID[1], " because no iSNV were found in the prefered
-                     SPECID" , id_snv$SPECID[2]))
+                     SPECID" , id_snv$SPECID[2]),"\n")
       return(id_snv$SPECID[2])
     }else{
       if(id_snv$gc_ul[1]<id_snv$gc_ul[2]){
         message(paste0("SPECID ", id_snv$SPECID[1],
                        "  being used for ENROLLID ", id_snv$ENROLLID[1],
                        " based on the time to the transmission date",
-                       "even though this sample has a lower titer than " , id_snv$SPECID[2]))
+                       "even though this sample has a lower titer than " , id_snv$SPECID[2],"\n"))
       }
       return(id_snv$SPECID[1])
     }
@@ -69,3 +69,68 @@ get_close<-function(meta,date,enrollid,case,iSNV=T){
   }
 }
 
+#' Randomly sample a transmission data.frame based on a list
+#' of donors
+#'
+#' Each run we will ramdomly choose one of the possible transmission pairs
+#' from data with a donor ENROLLID provided in the list and evalute the probability
+#' of transmission. Smoothing every 2%.
+#' @param data data frame on which to sample. contains freq1 and freq2
+#' @param runs The number of times to sample
+#' @param SPECIDs A list of SPECIDs that can be used
+#' @return a data frame with columns freq1, trial, and probability of transmission.
+#' @examples
+#'
+#' d<-small_meta$collect[4]+1
+#' get_close(small_meta,d,enrollid = "50001",case = "Donor",iSNV = T)
+#' @export
+#'
+com_sample_trans<-function(data,runs,SPECIDs,test=F){
+
+  # randomly sample n rows from a data frame
+  sample_n <- function(df,n){
+    return(df[sample(nrow(df),n),])
+  }
+
+  start.df <- data.frame(freq1=seq(0.02,1,0.02))
+  # We will smooth every 2%
+  model.df<-data.frame(freq1=rep(seq(0.02,1,0.02),runs),
+                      trial=rep(1:runs,each=length(seq(0.02,1,0.02))),
+                      prob=NA)
+  #print(model.df)
+  for (i in 1:runs){
+    # We only want pairings with an eligable donor
+    possible_pairs <- subset(data,SPECID1 %in% SPECIDs)
+    #pick one for each ENROLLID
+
+    pairings <- possible_pairs %>%
+                dplyr::group_by(SPECID1) %>%
+                dplyr::summarize(pair_id = sample(.data$pair_id,1))
+
+    #print(pairings)
+    sampled_data <- subset(data,pair_id %in% pairings$pair_id)
+    #print(sampled_data)
+
+    #smooths the data.
+    logit<-glm(formula =found~freq1,family=binomial(logit),data=sampled_data) # Fit a logit model to the data
+    #print(logit)
+    # Get the predictions on using the start frequencies
+
+    final.df<-dplyr::mutate(start.df,
+                     prob=predict(logit,data.frame(freq1=freq1),
+                                  type="response"),trial=i)
+    #print(final.df)
+    #print(model.df)
+    #data.sampled$prob = logit$fitted.values
+    #final.df=data.frame(freq1=data.sampled$freq1,prob=data.sampled$prob,trial=i) # Get the predictions on using the start frequencies
+
+    ind<-which(model.df$trial==i)
+    model.df$prob[ind]<-final.df$prob# add to the final output
+  }
+  if(!test){
+  return(model.df)
+  }
+  if(test){
+    return(list(sampled_data,model.df))
+  }
+}

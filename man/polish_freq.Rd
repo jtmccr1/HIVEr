@@ -4,14 +4,14 @@
 \alias{polish_freq}
 \title{Polishing compared frequencies.}
 \usage{
-polish_freq(df, min_freq, relative)
+polish_freq(df, relative, min_freq = 0)
 }
 \arguments{
 \item{df}{data frame with columns freq1 and freq2}
 
-\item{relative}{c("freq1","freq2") only look at sites with frequency above 0 at freq1,freq2 or niether.}
+\item{relative}{either freq1 or freq2 . unquoted. only look at sites with frequency above 0 at freq1,freq2}
 
-\item{...}{the minumun frequency allowed. frequencies below will be set to 0. those above to 1}
+\item{min_freq}{the minumun frequency allowed. frequencies below will be set to 0. those above to 1}
 }
 \value{
 a data frame with polymophoric loci
@@ -19,12 +19,12 @@ a data frame with polymophoric loci
 \description{
 This function polishes a frequency comparision data frame. The output
 is a subset  of the initial data frame only containing loci that are
-polymorphic given both samples. ie. between the two samples there must be two
-nucleotides. This function is needed because there are cases where a major allele
-exists but there is not minor allele because of sequencing error. In much of the analysis
+polymorphic in the specified sample.This function is needed because there are cases where a major allele
+exists but there is not minor allele because of sequencing errors. In much of the analysis
 we are only interested in polymophisms. This function ensures that is all we observe.
 }
 \examples{
 get_freqs(c("HS1595","HS1563"),small_isnv)->small_dups
+polish_freq(small_dups,0.02,freq1)
 
 }

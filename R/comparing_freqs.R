@@ -126,9 +126,13 @@ equal_compare <- function(position){ # take in all the variants found in a sampl
 #' @importFrom magrittr %>%
 
 
-get_freqs<-function(pairs,snv){ # take in a data frame of pairs of Ids. Only 1 pair, and a list of snv calls. and output the comparison between the 2. each iSNV and its frequency in both samples
+get_freqs<-function(pairs,snv){
+  # take in a data frame of pairs of Ids. Only 1 pair,
+  # and a list of snv calls. and output the comparison between the 2.
+  # each iSNV and its frequency in both samples
   snv<-subset(snv,SPECID %in% pairs,select=
                 c(SPECID,mutation,chr,pos,ref,var,freq.var,season,pcr_result))
+
   # just need the snv in the samples we're looking at.
   if(nrow(snv)>0){ # There are mutations.
     # We only compare samples from the same season and strain so in each case the reference base in the same
@@ -163,13 +167,15 @@ get_freqs<-function(pairs,snv){ # take in a data frame of pairs of Ids. Only 1 p
       return(all.freq)
     }
     else{ # some snv were initially present (before frequency filter) but after taking into account differences in inference the samples are the same.
-      #return(data.frame(mutation=NA,freq1=NA,freq2=NA,SPECID.1=pairs$SPECID.1,SPECID.2=pairs$SPECID.2,chr=NA,ref=NA,"pos"=NA,var=NA))
-      return(mut_table[F,])
+      x<-data.frame(mutation=NA,freq1=NA,freq2=NA,SPECID1=NA,
+                    SPECID2=NA,chr=NA,ref=NA,"pos"=NA,var=NA)
+      return(x[F,])
     }
   }
   else{ # No variants found in either sample
-    #return(data.frame(mutation=NA,freq1=NA,freq2=NA,SPECID.1=pairs$SPECID.1,SPECID.2=pairs$SPECID.2,chr=NA,ref=NA,"pos"=NA,var=NA))
-    return(mut_table[F,])
+    x<-data.frame(mutation=NA,freq1=NA,freq2=NA,SPECID1=NA,
+                  SPECID2=NA,chr=NA,ref=NA,"pos"=NA,var=NA)
+  return(x[F,])
   }
 }
 
@@ -209,48 +215,45 @@ dist_tp<-function(pairs,snv){
 #'
 #' This function polishes a frequency comparision data frame. The output
 #' is a subset  of the initial data frame only containing loci that are
-#' polymorphic given both samples. ie. between the two samples there must be two
-#' nucleotides. This function is needed because there are cases where a major allele
-#' exists but there is not minor allele because of sequencing error. In much of the analysis
+#' polymorphic in the specified sample.This function is needed because there are cases where a major allele
+#' exists but there is not minor allele because of sequencing errors. In much of the analysis
 #' we are only interested in polymophisms. This function ensures that is all we observe.
 #'
 #' @param df data frame with columns freq1 and freq2
-#' @param ... the minumun frequency allowed. frequencies below will be set to 0. those above to 1
-#' @param relative c("freq1","freq2") only look at sites with frequency above 0 at freq1,freq2 or niether.
+#' @param relative either freq1 or freq2 . unquoted. only look at sites with frequency above 0 at freq1,freq2
+#' @param min_freq the minumun frequency allowed. frequencies below will be set to 0. those above to 1
+
 #' @return a data frame with polymophoric loci
 #' @examples
 #' get_freqs(c("HS1595","HS1563"),small_isnv)->small_dups
+#' polish_freq(small_dups,0.02,freq1)
 #'
 #' @export
 
-polish_freq<-function(df,min_freq,relative){
+polish_freq<-function(df,relative,min_freq=0){
   rel_quo<-enquo(relative)
   min_freq_quo<-enquo(min_freq)
   mess = paste0("Requiring polymophic at least in ", quo_name(rel_quo))
   message(mess)
 
-  first_cut<-rlang::expr(UQ(rel_quo)>0)
-  second_cut<-rlang::expr(UQ(rel_quo)>UQ(min_freq_quo))
+  # We apply a freqeuncy cut off. it will be at least 0
+  frequency_cut<-rlang::expr(UQ(rel_quo)>UQ(min_freq_quo))
+  df<-dplyr::filter(df,UQ(frequency_cut))
 
-  #print(quo(dplyr::filter(df,UQ(second_cut))))
-  if(quo_name(rel_quo) %in% c("freq1","freq2")){
-  df<-dplyr::filter(df,UQ(first_cut))
-  }else{
-    warning("Not restrincting to sites polymorphic in at least one sample")
-  }
-  df<-dplyr::filter(df,UQ(second_cut))
+  # We want polymorphic sites in the given sample. Due to frequency oddities the major allels may not
+  # be exactly 1-min_freq i.e. we don't set any frequencies by hand. minor frequencies are set by deepsnv
+  # and this includes an estimated error rate. Major frequencies are set by allele counts.
 
-  if(grepl("1",quo_name(rel_quo))){
-  counts<- df %>% dplyr::group_by(chr,pos,SPECID1) %>% ## change to SPECID2 if needed.
-    dplyr::summarize(alleles=length(chr))
+  frequency_cut_minor<-rlang::expr(UQ(rel_quo)<1)
 
-  }else if(grepl("2",quo_name(rel_quo))){
-    counts<- df %>% dplyr::group_by(chr,pos,SPECID2) %>% ## change to SPECID2 if needed.
-      dplyr::summarize(alleles=length(chr))
-  }
-  df<-merge(df,subset(counts,alleles==2,select=-c(alleles)),all.x=F,all.y=T)
 
-  # Ensure frequencies in freq2 are either 0 or 1 if there are no polymorphism
 
-  return(df)
+  # How many alleles have frequencies in the choosen sample above the min and below 1 at each loci
+  counts<- df %>% dplyr::group_by(chr,pos,SPECID1,SPECID2) %>%
+  dplyr::summarize(alleles=length(which(UQ(frequency_cut) & UQ(frequency_cut_minor ))))
+
+  if(max(counts$alleles>2)) stop(paste0("More that two alleles found at a position in a sample"))
+  df<-merge(df,counts)
+
+  return(subset(df,alleles==2,select=-c(alleles)))
   }

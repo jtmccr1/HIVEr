@@ -114,6 +114,7 @@ freq_out = data.frame(mutation =c("PB2_G58A","PB2_G58G","PB2_G1099A","PB2_G1099G
 
 test_that("Getting frequencies",{
   expect_equal(get_freqs(c("HS1595","HS1563"),small_isnv),freq_out)
+  expect_equal(nrow(get_freqs(c("HS2222","HS9999"),small_isnv)),0)
 })
 
 test_that("Getting distance",{
@@ -122,7 +123,14 @@ test_that("Getting distance",{
 
 
 small_freqs<-get_freqs(c("HS1595","HS1563"),small_isnv)
+other <- small_freqs
+other$SPECID2[other$SPECID2=="HS1563"]<-"MH00000"
+
 test_that("polishes frequency data to polymorphic sites",{
-  expect_equal(nrow(setdiff(polish_freq(small_freqs,0.02,freq1),polish_freq(small_freqs,0.02,freq2))),0)
-  expect_equal(nrow(setdiff(freq_out[3:4,],polish_freq(small_freqs,min_freq = 0.02,freq2))),0)
+  expect_equal(nrow(setdiff(polish_freq(small_freqs,freq1,0.02),polish_freq(small_freqs,freq2,0.02))),0)
+  expect_equal(nrow(setdiff(freq_out[3:4,],polish_freq(small_freqs,freq2,0.02))),0)
+})
+test_that("polishes throws error when more than 2 alleles counted",{
+  small_freqs<-rbind(small_freqs,other)
+  expect_output(str(polish_freq(small_freqs,freq1,0.02)),"4 obs.")
 })

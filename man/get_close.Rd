@@ -35,5 +35,6 @@ the date when specified. The criteria is
 }
 \examples{
 
-
+d<-small_meta$collect[4]+1
+get_close(small_meta,d,enrollid = "50001",case = "Donor",iSNV = T)
 }
