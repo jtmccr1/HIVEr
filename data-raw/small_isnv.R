@@ -1,4 +1,3 @@
-require(magrittr)
 qual<-read.csv("../../Analysis/HIVE/data/processed/qual.snv.csv",stringsAsFactors = F)
 subset(qual,SPECID %in% c("HS1595","HS1563"))->small_isnv
 subset(small_isnv,chr=="PB2"& ref=="G")->small_isnv

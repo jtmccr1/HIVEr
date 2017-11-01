@@ -8,7 +8,7 @@
 #'
 #' 2) Titer is the tie breaker when applicable.
 #'
-#' 3) If no iSNV were found in a donor sample
+#' 3) If no iSNV were found in a donor sample and iSNV==T we take the sample with iSNV present.
 #'
 #' @param meta data frame with meta data con
 #' @param date The estimated trasmission date
@@ -22,10 +22,11 @@
 #' @examples
 #'
 #' d<-small_meta$collect[4]+1
-#' get_close(small_meta,d,enrollid = "50001",case = "Donor",iSNV = T)
+#' get_close(small_meta,d,enrollid = "50001",case = "Donor",iSNV = TRUE)
 #' @export
 
-get_close<-function(meta,date,enrollid,case,iSNV=T){
+
+get_close<-function(meta,date,enrollid,case,iSNV=TRUE){
   id_snv=subset(meta,ENROLLID==enrollid & snv_qualified==T)
   if(nrow(id_snv)==1){ # it there is only one sample from this individual
     return(id_snv$SPECID)
@@ -88,11 +89,6 @@ get_close<-function(meta,date,enrollid,case,iSNV=T){
 #' @export
 #'
 com_sample_trans<-function(data,runs,SPECIDs,test=F){
-
-  # randomly sample n rows from a data frame
-  sample_n <- function(df,n){
-    return(df[sample(nrow(df),n),])
-  }
 
   # It may be the case that there isn't another community pair for a given
   # donor. We identify it here. remove it and warn the user.

@@ -4,7 +4,7 @@
 \alias{get_close}
 \title{Finding SPECID for transmission pairs}
 \usage{
-get_close(meta, date, enrollid, case, iSNV = T)
+get_close(meta, date, enrollid, case, iSNV = TRUE)
 }
 \arguments{
 \item{meta}{data frame with meta data con}
@@ -32,10 +32,10 @@ the date when specified. The criteria is
 
 2) Titer is the tie breaker when applicable.
 
-3) If no iSNV were found in a donor sample
+3) If no iSNV were found in a donor sample and iSNV==T we take the sample with iSNV present.
 }
 \examples{
 
 d<-small_meta$collect[4]+1
-get_close(small_meta,d,enrollid = "50001",case = "Donor",iSNV = T)
+get_close(small_meta,d,enrollid = "50001",case = "Donor",iSNV = TRUE)
 }

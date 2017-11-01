@@ -226,7 +226,7 @@ dist_tp<-function(pairs,snv){
 #' @return a data frame with polymophoric loci
 #' @examples
 #' get_freqs(c("HS1595","HS1563"),small_isnv)->small_dups
-#' polish_freq(small_dups,0.02,freq1)
+#' polish_freq(small_dups,freq1,0.02)
 #'
 #' @export
 
