@@ -1,4 +1,4 @@
 library(testthat)
-library(Transmission)
+library("HIVEr")
 
-test_check("Transmission")
+test_check("HIVEr")

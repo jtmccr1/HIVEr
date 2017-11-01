@@ -2,7 +2,7 @@
 % Please edit documentation in R/transmission.R
 \name{com_sample_trans}
 \alias{com_sample_trans}
-\title{Randomly sample a transmission data.frame based on a list
+\title{Randomly sample a transmission tibble based on a list
 of donors}
 \usage{
 com_sample_trans(data, runs, SPECIDs, test = F)
@@ -12,7 +12,10 @@ com_sample_trans(data, runs, SPECIDs, test = F)
 
 \item{runs}{The number of times to sample}
 
-\item{SPECIDs}{A list of SPECIDs that can be used}
+\item{SPECIDs}{A list of SPECIDs that can be used as donors}
+
+\item{test}{A boolean switch. If activatve returns a list of 2 tibbles. The first is
+the last sample_data tibble the second is the normal output}
 }
 \value{
 a data frame with columns freq1, trial, and probability of transmission.
@@ -23,6 +26,6 @@ from data with a donor ENROLLID provided in the list and evalute the probability
 of transmission. Smoothing every 2%.
 }
 \examples{
-print(small_comunity.comp)
+print(small_community.comp)
 com_sample_trans(small_community.comp,2,c("HS1595","MH0000"))
 }

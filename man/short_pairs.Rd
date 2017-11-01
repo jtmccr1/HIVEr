@@ -27,7 +27,8 @@ the function
 }
 \examples{
 get_double(small_meta)->small_doub
-small_doub<-dplyr::select(small_doub,ENROLLID,pcr_result,HOUSE_ID,SPECID,onset,collect,vaccination_status,DPI,season,gc_ul,sequenced,home_collected,snv_qualified)
+small_doub<-dplyr::select(small_doub,ENROLLID,pcr_result,HOUSE_ID,SPECID,
+onset,collect,vaccination_status,DPI,season,gc_ul,sequenced,home_collected,snv_qualified)
 columns = c("SPECID","onset","collect","vaccination_status",
            "DPI","gc_ul","sequenced","home_collected","snv_qualified")
 short_pairs(small_doub,columns,ENROLLID,HOUSE_ID,pcr_result,season)

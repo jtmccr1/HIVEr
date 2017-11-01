@@ -32,7 +32,7 @@ If there is only one allele but we might expect two given the frequency then we 
 }
 \examples{
 # Here we add the reference base in the correct row.
-position <- data.frame(ENROLLID1 = c(300294,300294),
+position <- tibble(ENROLLID1 = c(300294,300294),
                        ENROLLID2 = c(300293,300293),
                        mutation = c("M_C806A","M_C806C"),
                        freq1 = c(0,0),
@@ -40,12 +40,12 @@ position <- data.frame(ENROLLID1 = c(300294,300294),
                        chr = c("M","M"),
                        pos = c(806,806),
                        ref = c("C","C"),
-                       var = c("A","C"),stringsAsFactors = F)
+                       var = c("A","C"))
 print(position)
 equal_compare(position)
 
 # Here we add a row when the major alleles differ.
-position <- data.frame(ENROLLID1 = c(300294),
+position <- tibble(ENROLLID1 = c(300294),
                        ENROLLID2 = c(300293),
                        mutation = c("M_C806A"),
                        freq1 = c(0),
@@ -53,12 +53,12 @@ position <- data.frame(ENROLLID1 = c(300294),
                        chr = c("M"),
                        pos = c(806),
                        ref = c("C"),
-                       var = c("A"),stringsAsFactors = F)
+                       var = c("A"))
 print(position)
 equal_compare(position)
 
 # Here we remove the entry as the samples are the same
-position <- data.frame(ENROLLID1 = c(300294),
+position <- tibble(ENROLLID1 = c(300294),
                        ENROLLID2 = c(300293),
                        mutation = c("M_C806A"),
                        freq1 = c(1),
@@ -66,7 +66,7 @@ position <- data.frame(ENROLLID1 = c(300294),
                        chr = c("M"),
                        pos = c(806),
                        ref = c("C"),
-                       var = c("A"),stringsAsFactors = F)
+                       var = c("A"))
 print(position)
 equal_compare(position)
 }

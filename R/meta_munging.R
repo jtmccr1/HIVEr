@@ -354,7 +354,8 @@ longform_pairs<-function(df,columns = c("ENROLLID","onset","gc_ul","sequenced"))
 #' @return the a data frame with a row for each pair
 #' @examples
 #' get_double(small_meta)->small_doub
-#' small_doub<-dplyr::select(small_doub,ENROLLID,pcr_result,HOUSE_ID,SPECID,onset,collect,vaccination_status,DPI,season,gc_ul,sequenced,home_collected,snv_qualified)
+#' small_doub<-dplyr::select(small_doub,ENROLLID,pcr_result,HOUSE_ID,SPECID,
+#' onset,collect,vaccination_status,DPI,season,gc_ul,sequenced,home_collected,snv_qualified)
 #' columns = c("SPECID","onset","collect","vaccination_status",
 #'            "DPI","gc_ul","sequenced","home_collected","snv_qualified")
 #' short_pairs(small_doub,columns,ENROLLID,HOUSE_ID,pcr_result,season)

@@ -78,10 +78,12 @@ get_close<-function(meta,date,enrollid,case,iSNV=T){
 #' of transmission. Smoothing every 2%.
 #' @param data data frame on which to sample. contains freq1 and freq2
 #' @param runs The number of times to sample
-#' @param SPECIDs A list of SPECIDs that can be used
+#' @param SPECIDs A list of SPECIDs that can be used as donors
+#' @param test A boolean switch. If activatve returns a list of 2 tibbles. The first is
+#' the last sample_data tibble the second is the normal output
 #' @return a data frame with columns freq1, trial, and probability of transmission.
 #' @examples
-#' print(small_comunity.comp)
+#' print(small_community.comp)
 #' com_sample_trans(small_community.comp,2,c("HS1595","MH0000"))
 #' @export
 #'
@@ -185,6 +187,58 @@ com_sample_trans<-function(data,runs,SPECIDs,test=F){
 
   if(!test){
   return(model.df)
+  }
+  if(test){
+    return(list(sampled_data,model.df))
+  }
+}
+
+#' Randomly sample a transmission data.frame without any
+#' restriction on donor SPECID
+#'
+#' Each run we will ramdomly choose 'pairs' of the possible transmission pairs
+#' from data  smoothing every 2%.
+#' @param data data frame on which to sample. contains freq1 and freq2
+#' @param runs The number of times to sample
+#' @param pairs The number of pairs to include in each run.
+#' @param test A boolean switch. If activatve returns a list of 2 tibbles. The first is
+#' the last sample_data tibble the second is the normal output
+#' @return a data frame with columns freq1, trial, and probability of transmission.
+#' @examples
+#'
+#' sample_trans(small_community.comp,2,3)
+#' @export
+#'
+sample_trans<-function(data,runs,pairs,test=F){
+  # randomly sample n rows from a data frame
+  sample_n <- function(df,n){
+    return(df[sample(nrow(df),n),])
+  }
+  start.df <- data.frame(freq1=seq(0.02,1,0.02))
+  # We will smooth every 2%
+  model.df<-data.frame(freq1=rep(seq(0.02,1,0.02),runs),
+                       trial=rep(1:runs,each=length(seq(0.02,1,0.02))),
+                       prob=NA)
+  #print(model.df)
+  possible_pairs <- unique(data$pair_id)
+
+  for (i in 1:runs){
+    #print(pairings)
+
+    run_pairs<-sample(possible_pairs,pairs)
+    sampled_data <- data[data$pair_id %in% run_pairs,]
+    #smooths the data.
+    logit<-glm(formula =found~freq1,family=binomial(logit),data=sampled_data) # Fit a logit model to the data
+    #print(logit)
+    # Get the predictions on using the start frequencies
+    final.df<-dplyr::mutate(start.df,
+                            prob=predict(logit,data.frame(freq1=freq1),
+                                         type="response"),trial=i)
+    ind<-which(model.df$trial==i)
+    model.df$prob[ind]<-final.df$prob# add to the final output
+  }
+  if(!test){
+    return(model.df)
   }
   if(test){
     return(list(sampled_data,model.df))
