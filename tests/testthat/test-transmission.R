@@ -42,4 +42,15 @@ test_that("sampling pairings with resued donor",{
 
 })
 
+test_that("Sampling without donor restriction",{
 
+  x<-sample_trans(small_community.comp,2,2,test=T)
+  sample_data<-x[[1]]
+  model_out<-x[[2]]
+
+  expect_equal(nrow(sample_data),4)
+  expect_equal(length(unique(sample_data$pair_id)),2)
+
+  expect_equal(unique(model_out$trial),c(1,2))
+  expect_equal(nrow(model_out),100)
+})
