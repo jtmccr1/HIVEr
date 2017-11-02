@@ -4,7 +4,7 @@
 \alias{math_fit}
 \title{The probability of lambda for a loci}
 \usage{
-math_fit(data, l = seq(0.01, 10, 0.01), Nb_max = 100)
+math_fit(data, l, Nb_max, model, threshold, acc)
 }
 \arguments{
 \item{data}{a data frame of one donor polymorphic loci. It must have
@@ -13,6 +13,12 @@ columns chr,pos,freq1, and found}
 \item{l}{a vector of lambda values to test}
 
 \item{Nb_max}{The maximum bottleneck size to test}
+
+\item{model}{The model we are using must be either "PA" or "BetaBin"}
+
+\item{threshold}{limit of variant calling detection}
+
+\item{acc}{a data frame with accuracy metrics}
 }
 \value{
 a tibble with columns for each lambda and the probability of
@@ -28,6 +34,6 @@ x$found=c(T,T)
 math_fit(x,1:2)
 
 x$found=c(F,T)
-math_fit(x,1:2)
+math_fit(x,1:2,100,"PA")
 
 }

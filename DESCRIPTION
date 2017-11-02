@@ -13,5 +13,6 @@ Imports: dplyr,
     tidyverse,
     extrafont,
     rlang,
+    tidyr,
 RoxygenNote: 6.0.1
 Suggests: testthat

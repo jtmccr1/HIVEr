@@ -4,7 +4,7 @@
 \alias{simulations}
 \title{Simulate probability of transmission  based on frequency}
 \usage{
-simulations(data, runs, lambda, FUN)
+simulations(data, runs, lambda, FUN, threshold = NULL, acc = NULL, ...)
 }
 \arguments{
 \item{data}{data frame of transmission data}
@@ -13,11 +13,26 @@ simulations(data, runs, lambda, FUN)
 
 \item{lambda}{What is the lamda of the zero truncated Poisson to use}
 
-\item{FUN}{what function to use to simulate the found column}
+\item{FUN}{what function to use to simulate the found column pa_sim or betabin_sim unquoted}
+
+\item{threshold}{- optional to pass to betabinomial simulator}
+
+\item{acc}{optional to pass to betabinomial simulation}
+
+\item{...}{columns to group for simulations. These will get the same
+bottleneck size within each replication. It should probably only ever be
+pair_id.(ie each person gets the same bottleneck within a run)}
 }
 \value{
-
+a data frame of simulated logit fits to frequency in donor vs.
+probability of transmission
 }
 \description{
 Simulate probability of transmission  based on frequency
+}
+\examples{
+simulations(small_trans,10,3.2,pa_sim)
+simulations(small_trans,10,3.2,betabin_sim,0.02,accuracy_stringent)
+
+
 }

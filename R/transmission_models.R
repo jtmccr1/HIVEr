@@ -84,6 +84,9 @@ p_all<-Vectorize(p_all,vectorize.args="n")
 #' columns chr,pos,freq1, and found
 #' @param l a vector of lambda values to test
 #' @param Nb_max The maximum bottleneck size to test
+#' @param model The model we are using must be either "PA" or "BetaBin"
+#' @param threshold limit of variant calling detection
+#' @param acc a data frame with accuracy metrics
 #'
 #' @return a tibble with columns for each lambda and the probability of
 #' observing the data for that site.
@@ -94,28 +97,14 @@ p_all<-Vectorize(p_all,vectorize.args="n")
 #' math_fit(x,1:2)
 #'
 #' x$found=c(F,T)
-#' math_fit(x,1:2)
+#' math_fit(x,1:2,100,"PA")
 #'
 #' @export
-math_fit=function(data,l=seq(0.01,10,0.01),Nb_max=100){
+math_fit=function(data,l,Nb_max,model,threshold,acc){
   # this  calculation is for each position in the genome.
   stopifnot(length(unique(data$chr))==1, length(unique(data$pos))==1)
-  #  In this fit we take the minority frequency to be  correct
-  # and set the major frequency to 1-minority. This accounts for
-  # the fact that frequencies are related by the expression :
-  # minor allele + major allele + errror =1.
-  #Here we make the major allele frequency = major allele + error.
-  #The error is always small. if it exceeds 1% then we through an error here.
-
-  if(1-sum(data$freq1)>0.01){
-    stop("The sum of the frequencies is less than 99%")
-  }
-  data$freq1[data$freq1==max(data$freq1)]<-1-min(data$freq1)
-
-
-  found<-data[data$found==T,] # only alleles that were transmitted
-  Nb<-1:Nb_max # Here are the bottlenecks
-  # we need the probability of getting a bottleneck of size Nb give lambda
+  stopifnot(model %in% c("PA","BetaBin"))
+  Nb <- 1:Nb_max
   Nb_given_l<-matrix(dzpois(Nb,l),ncol = length(l),byrow=T)
   # This gives a 100 by 1000 matrix.
   # |-------lambda_j-------|
@@ -126,24 +115,58 @@ math_fit=function(data,l=seq(0.01,10,0.01),Nb_max=100){
   # |                      |
   # |                      |
 
-  if(nrow(found)==0 | nrow(found)>2){
-    stop(paste0("No variant transmitted for this site or",
-                "there are more than 2 variants here"))
-  }else if(nrow(found)==1){ # one variant found here. All successes
-    prob<-p_all(p=found$freq1,n=Nb)
-    # this is a vector of probabilities for each
-    # n prob[i]= the probability of only getting that
-    # variant in Nb[i] (i.e. draws)
-  }else if(nrow(found)==2){
-  # if at least on of each allele was transmitted
+  # we now need to determine the probability of observing the data for each bottleneck
+  # and each model.
+  if(model=="PA"){
+    #  In this fit we take the minority frequency to be  correct
+    # and set the major frequency to 1-minority. This accounts for
+    # the fact that frequencies are related by the expression :
+    # minor allele + major allele + errror =1.
+    #Here we make the major allele frequency = major allele + error.
+    #The error is always small. if it exceeds 1% then we through an error here.
 
-    first_var<-p_all(p=found$freq1[1],n=Nb) # all this one
-    second_var<-p_all(p=found$freq1[2],n=Nb) # all the other one
-    one_each<-1-(first_var+second_var)
-    # at least one of each -
-    # This is a vector as above since R adds and subtracts the
-    # elements of the vectors as expected
-    prob<-one_each
+    if(1-sum(data$freq1)>0.01){
+      stop("The sum of the frequencies is less than 99%")
+    }
+    data$freq1[data$freq1==max(data$freq1)]<-1-min(data$freq1)
+
+
+    found<-data[data$found==T,] # only alleles that were transmitted
+    Nb<-1:Nb_max # Here are the bottlenecks
+    # we need the probability of getting a bottleneck of size Nb give lambda
+
+
+    if(nrow(found)==0 | nrow(found)>2){
+      stop(paste0("No variant transmitted for this site or",
+                  "there are more than 2 variants here"))
+    }else if(nrow(found)==1){ # one variant found here. All successes
+      prob<-p_all(p=found$freq1,n=Nb)
+      # this is a vector of probabilities for each
+      # n prob[i]= the probability of only getting that
+      # variant in Nb[i] (i.e. draws)
+    }else if(nrow(found)==2){
+    # if at least on of each allele was transmitted
+
+      first_var<-p_all(p=found$freq1[1],n=Nb) # all this one
+      second_var<-p_all(p=found$freq1[2],n=Nb) # all the other one
+      one_each<-1-(first_var+second_var)
+      # at least one of each -
+      # This is a vector as above since R adds and subtracts the
+      # elements of the vectors as expected
+      prob<-one_each
+    }
+  }else if(model=="BetaBin"){
+    if(nrow(data[data$freq1>0.5,])>0){
+      data<-data[df$freq1<0.5,]
+      warning("The beta binomials model only uses minor alleles. Subsetting the data now.")
+    }
+    # 2 is the recipient
+    v_r = data$freq2
+    v_d = data$freq1
+    gc_ul = data$gc_ul2
+    threshold = 0.02
+
+    prob = L.Nb.beta(v_r,v_d,Nb,gc_ul,threshold,acc)
   }
 
 
@@ -163,21 +186,24 @@ math_fit=function(data,l=seq(0.01,10,0.01),Nb_max=100){
   return(tibble(lambda=l,prob=conditional_prob))
 }
 
-#' Fit presence absence model
+#' Fit the transmission model
 #'
 #' This is wrapper around math_fit that fits the presence absence model to
 #' each pair present in the data set.
 #' @param data a data frame or tibble it will be split by chr pos and pair_id
 #' @param l a vector of lambda values to test
 #' @param Nb_max The maximum bottleneck size to test
+#' @param model PA or BetaBin
+#' @param threshold limit of variant calling detection
+#' @param acc a data frame with accuracy metrics
 #' @param ... other columns to group by in final output.
 #' @return a tibble with columns pair_id,lambda,LL (log likelihood), and pair_id if desired.
 #' @export
 
-pa_fit<-function(data,l,Nb_max,...){
+trans_fit<-function(data,l,Nb_max,model,threshold,acc,...){
   group <- rlang::quos(...,lambda)
   probs<-data %>% dplyr::group_by(chr,pos,pair_id) %>%
-    dplyr::do(math_fit(.data,l,Nb_max))
+    dplyr::do(math_fit(.data,l,Nb_max,model,threshold,acc))
   # For each genomic position in question
   LL.df<-probs %>% dplyr::group_by(!!!group) %>%
     dplyr::summarize(LL=sum(log(prob)))
@@ -232,7 +258,7 @@ model_summary<-function(data){
 pa_sim<-function(data,lambda){
   pair<-unique(data$pair_id)
   if(length(pair)>1){
-    warning(paste0("Runing on ",length(pair)," pairs. All will have the same bottleneck."))
+    warning(paste0("Running on ",length(pair)," pairs. All will have the same bottleneck."))
   }
   Nb<-rzpois(1,lambda)
   out<-data %>% dplyr::group_by(chr,pos,pair_id) %>%
@@ -255,8 +281,6 @@ pa_sim<-function(data,lambda){
 #'
 #' @return data frame the same as data but with a simulated found column
 #'
-#' @examples
-#' pa_sim_helper(small_trans[1:2,],3)
 
 pa_sim_helper<-function(data,Nb){
   # data refers to the 2 mutations at this position, bottlenecks-
@@ -324,16 +348,22 @@ rzpois<-function(n,lambda){
 #' @param data data frame of transmission data
 #' @param runs how many simulations to run
 #' @param lambda What is the lamda of the zero truncated Poisson to use
-#' @param FUN what function to use to simulate the found column
-#' @parma ... columns to group for simulations. These will get the same
+#' @param FUN what function to use to simulate the found column pa_sim or betabin_sim unquoted
+#' @param threshold - optional to pass to betabinomial simulator
+#' @param acc optional to pass to betabinomial simulation
+#' @param ... columns to group for simulations. These will get the same
 #' bottleneck size within each replication. It should probably only ever be
 #' pair_id.(ie each person gets the same bottleneck within a run)
 #'
-#' @return
+#' @return a data frame of simulated logit fits to frequency in donor vs.
+#' probability of transmission
+#' @examples
+#' simulations(small_trans,10,3.2,pa_sim)
+#' simulations(small_trans,10,3.2,betabin_sim,0.02,accuracy_stringent)
 #'
 #'
 #' @export
-simulations<-function(data,runs,lambda,FUN,...){
+simulations<-function(data,runs,lambda,FUN,threshold=NULL,acc=NULL,...){
   # iSNV data, how many iterations,
   # what is lambda value and what function is used to simulate the data.
 
@@ -345,9 +375,13 @@ simulations<-function(data,runs,lambda,FUN,...){
   pairs<-length(unique(data$pair_id))
     for (i in 1:runs){
 
-
+    if(is.null(threshold)){
     trial.df<-data %>% dplyr::group_by(!!!group_by)%>%
       dplyr::do(FUN(.,lambda))
+    }else{
+      trial.df<-data %>% dplyr::group_by(!!!group_by)%>%
+        dplyr::do(FUN(.,lambda,threshold,acc))
+    }
     logit<-glm(formula =found~freq1,family=binomial(logit),data=trial.df) # Fit a logit model to the data
     trial.df$prob<-logit$fitted.values
     trial.df$trial<-i
@@ -357,3 +391,192 @@ simulations<-function(data,runs,lambda,FUN,...){
   }
   return(model.df)
 }
+#=============================================================================
+#                           BETA BINOMIAL FUNCTIONS
+#=============================================================================
+#
+
+#' @describeIn L.Nb.beta likelihood the variant is  found in recipient
+
+
+like_found.beta<-function(v_r,v_d,Nb,gc_ul,threshold,acc=accuracy_stringent){
+  acc_gc=10^(floor(log10(gc_ul)))
+  if(acc_gc>1e5){
+    acc_gc <- 1e5
+  }
+  # If the frequency is below our threshold then the probability of being found is 0
+  if(v_r<threshold){
+    return(0)
+  }
+  # This will round the gc down to the nearest log as discussed below.
+  if(v_r>=0.02 & v_r<0.05){
+    sense= acc$sensitivity[which(acc$gc_ul==acc_gc & acc$freq==0.02)]
+  }else if(v_r>=0.05 & v_r<0.1){
+    sense= acc$sensitivity[which(acc$gc_ul==acc_gc & acc$freq==0.05)]
+  }
+  else {
+    sense=1
+  }
+  prob = c()
+  if(v_r<=(1-threshold)){
+    for(k in 0:Nb){
+      prob[k+1]=dbeta(x=v_r,shape1 = k,shape2=Nb-k)*dbinom(x=k,size=Nb,prob = v_d)*sense
+    }
+    prob=sum(prob)
+  }else if(v_r>(1-threshold)){
+    # it is fixed - whats the probability the other allele was not found
+    lost_allele_freq = 1-v_d
+    # The for loop over k and sum is in the like_lost.beta.uncert function
+    prob = like_lost.beta.uncert(v_r=0,v_d=lost_allele_freq,Nb,gc_ul,threshold,acc=acc)
+    }
+    return(prob)
+}
+
+#' @describeIn L.Nb.beta likelihood the variant is not found in recipient
+like_lost.beta.uncert<-function(v_r,v_d,Nb,gc_ul,threshold,acc=accuracy_stringent){ # sum over k
+  stopifnot(v_r<threshold) # ensure not found in the recipient
+  acc_gc=10^(floor(log10(gc_ul)))
+  if(acc_gc>1e5){
+    acc_gc <- 1e5
+  }
+  # This will round the gc down to the nearest log as discussed below.
+  prob=c()
+  for(k in 0:Nb){
+    uncert_term=c()
+    f=c(0.02,0.05,0.10)
+    for(i in 1:(length(f)-1)){
+      uncert=1-acc$sensitivity[which(acc$gc_ul==acc_gc & acc$freq==f[i])]
+      # The prob the variant is missed because itis between f[i] and f[i+1] given
+      # the sample size
+      uncert_term[i]=(pbeta(q = f[i+1],shape1 = k,shape2 = Nb-k)-
+                        pbeta(q = f[i],shape1 = k,shape2 = Nb-k))*
+        dbinom(x=k,size=Nb,prob = v_d)*uncert
+    }
+    #probability the variant is below the cut off or present but missed
+    prob[k+1]=pbeta(q = threshold,shape1 = k,shape2 = Nb-k)*dbinom(x=k,size=Nb,prob = v_d)+sum(uncert_term)
+  }
+  sum(prob)
+}
+
+#' Betabinomial Likelihood functions
+#'
+#' What is the probability of observing the data given a bottleneck
+#' size under the beta binomial model. This is a wrapper around the two likelihood
+#' functions
+#' @param v_r allele frequency in the recipient
+#' @param v_d allele frequency in the donor
+#' @param Nb Bottleneck size (may be a vector)
+#' @param gc_ul titer in recipeint sample
+#' @param threshold detection level threshold
+#' @param acc a data frame with accrucacy data must contain, columns
+#'  freq,sensitivity, and gc_ul
+#'
+#' @return The likelihood of observing the data given the bottleneck size.
+#' @export
+L.Nb.beta<-function(v_r,v_d,Nb,gc_ul,threshold,acc=accuracy_stringent){
+  if(v_r>=threshold){
+        like=like_found.beta(v_r=v_r,v_d=v_d,Nb=Nb,gc_ul=gc_ul,threshold=threshold,acc=acc)
+  }else if(v_r<threshold){ # Not found
+      like=like_lost.beta.uncert(v_r=v_r,v_d=v_d,Nb=Nb,gc_ul=gc_ul,threshold=threshold,acc=acc)
+    }
+  return(like)
+}
+L.Nb.beta<-Vectorize(L.Nb.beta,vectorize.args = "Nb")
+
+
+#' Simulate transmission Beta binomial model
+#'
+#' Simulate the transmission of alleles using the
+#' betabinomial model. Essentially this takes
+#' the frequency of the variant allele, and bottleneck
+#' size and simulates the found column. It also selects a bottleneck size
+#' based on lambda and a zero truncated Poisson. If simulation the whole data
+#' set each pair should be run separately as to not use the same bottleneck
+#'
+#' @param data a data frame with with chr,pos,freq1, and  pair_id columns
+#' @param lambda The lambda of the zero truncated Poisson
+#' @param threshold limit of variant calling detection
+#' @param acc a data frame with accuracy metrics
+#'
+#' @return data frame the same as data but with a simulated found column
+#'
+#' @examples
+#' betabin_sim(small_trans,1.2,0.02,accuracy_stringent)
+#' @export
+betabin_sim<-function(data,lambda,threshold,acc=accuracy_stringent){
+
+  pair<-unique(data$pair_id)
+  if(length(pair)>1){
+    warning(paste0("Running on ",length(pair)," pairs. All will have the same bottleneck."))
+  }
+
+  Nb<-rzpois(1,lambda)
+  out<-data %>% dplyr::group_by(chr,pos,pair_id) %>%
+    dplyr::do(betabin_sim_helper(.,Nb,threshold,acc))
+  return(out)
+
+
+
+}
+
+
+#' beta bin sim helper
+#'
+#' Helper function to simulate beta binomial data. This takes in one loci.
+#' the data frame should have 2 rows (one for each allele.)
+#'  Essentially this takes
+#' the frequency of the variant allele, and bottleneck
+#' size and simulates the found column.
+#'
+#' @param data a data frame with with freq1 and pair_id columns and 2 rows
+#' @param Nb the bottleneck size
+#' @param threshold limit of variant calling detection
+#' @param acc a data frame with accuracy metrics
+#'
+#' @return data frame the same as data but with a simulated found column
+#'
+betabin_sim_helper<-function(data,Nb,threshold,acc){
+  # data refers to the 2 mutations at this position, bottlenecks-
+  #  a data frame with the bottle_neck,
+  #model - the name of the column in the bottlenecks that
+  # contains the bottleneck size we want to use.
+  if(nrow(data)!=2){
+    stop(print("There are not 2 mutations at this point."))
+  }
+  pair<-unique(data$pair_id)
+
+  if(length(pair)!=1){
+    stop(print("There should only be one pair id at this point."))
+  }
+
+  minor<-min(data$freq1) # This is the minor allele frequency
+  major<-1-min(data$freq1)
+
+    # includes uncertainty -
+    # with v_r = 0 or 1 these are probabilities otherwise they are densities.
+    only_minor= L.Nb.beta(v_r=1,v_d=minor,Nb=Nb,gc_ul=unique(data$gc_ul2),threshold=threshold,acc)
+      # includes uncertainty - The likelihood the allele was lost
+    only_major = L.Nb.beta(v_r=1,v_d=major,Nb=Nb,gc_ul=unique(data$gc_ul2),threshold=threshold,acc) # includes uncertainty - The likelihood the allele was lost
+
+  both = 1-(only_minor+only_major)
+
+  # flip the coin
+  pick = runif(1,0,1)
+  data$found=F
+
+  # 0  only_minor         only_major         both                        1
+  # |------------------|---------------|---------------------------------|
+
+  if(pick<=only_minor){
+    # onlny the minor was found
+    data$found[data$freq1==min(data$freq1)]=T
+  }else if(pick>only_minor & pick<(only_minor+only_major)){
+    # only the major was found
+    data$found[data$freq1==max(data$freq1)]=T
+  }else if(pick>=(only_minor+only_major)){
+    # both were found
+    data$found=T
+  }
+  return(data)
+}
+
