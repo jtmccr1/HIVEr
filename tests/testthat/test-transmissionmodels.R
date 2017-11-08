@@ -28,8 +28,8 @@ test_that("Testing helper functions",{
 
 set.seed(15) # so we avoid glm warnings
 test_that("proper warnings and data structure in PA_sim",{
-  x<-simulations(small_trans,2,0.4,pa_sim,pair_id)
-  w<-capture_warnings(simulations(small_trans,2,0.5,pa_sim))
+  x<-simulations(small_trans,2,0.4,pa_sim,threshold= NULL,acc=NULL, pair_id)
+  w<-capture_warnings(simulations(small_trans,2,0.5,pa_sim,threshold= NULL,acc=NULL))
   expect_length(unique(x$trial),2)
   expect_match(w, "All will have the same bottleneck.", all = TRUE)
 

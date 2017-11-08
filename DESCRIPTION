@@ -14,5 +14,6 @@ Imports: dplyr,
     extrafont,
     rlang,
     tidyr,
+    purrr,
 RoxygenNote: 6.0.1
 Suggests: testthat
