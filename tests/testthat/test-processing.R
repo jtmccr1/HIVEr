@@ -23,3 +23,8 @@ test_that("Testing correct id",{
   x<-correct_id(cov_sample,Id)
   expect_equal(x$Id,c("129","MH00000"))
 })
+
+test_that("Testing diversity cut",{
+  diverse_sites(small_isnv,1,season,pcr_result,pos,chr)->x
+  expect_equal(1099,unique(x$pos))
+})

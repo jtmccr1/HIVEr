@@ -155,3 +155,33 @@ correct_id<-function(df,col){
                                            sub(".0","",!!quo_col,fixed = TRUE),
                                            !!quo_col))
 }
+
+
+#' Get sites with diverisity
+#'
+#' In our analysis we are not interested in loci that only have
+#' one allele present within a season. Cutting out such loci
+#' helps focus on the important loci and distinctions between samples.
+#' This function counts the unique "var" entries in a dataframe according
+#' to the set grouping and removes sites that don't meet the cut off.
+#'
+#' @param df variant data frame
+#' @param cutoff integer. The allele must be found more than this many times in the
+#' groupings below.
+#' @param ... columns to group by. There's no current need for them to be anything but
+#' season,chr,pos,pcr_result as this allows us to
+#' @return the input data frame but with sites with more alleles than the cut off
+#' @examples
+#' diverse_sites(small_isnv,1,season,pcr_result,pos,chr)
+#'
+#' @export
+diverse_sites<-function(df,cutoff,...){
+  group_var<-rlang::quos(...)
+
+  df_alleles<- df %>% dplyr::group_by(!!!group_var) %>%
+    dplyr::summarize(alleles=length(unique(var)))
+
+  df <- dplyr::left_join(df,df_alleles)
+  stopifnot(any(!is.na(df$alleles)))
+  df <- df %>% dplyr::filter(alleles>cutoff) %>% dplyr::select(-alleles)
+}
