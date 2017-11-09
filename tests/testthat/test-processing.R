@@ -13,7 +13,8 @@ test_that("Testing quality function",{
   qsmall<-quality(subset(variants,Id=="HS1381_A"))
   expect_equal(nrow(qsmall),12)
   variants$gc_ul<-1e2
-  expect_error(quality(variants))
+  w<-capture_warnings(quality(variants))
+  expect_match(w,"It will be removed")
 
 })
 

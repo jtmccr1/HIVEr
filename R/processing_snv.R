@@ -128,8 +128,9 @@ quality<-function(df){ # this now is written to handle 1 isolate (with possibly 
   }else if(runs$runs==1 & unique(df$gc_ul)>1e5){
     return(df)
   }else{
-    stop(paste0(unique(df$LAURING_ID)," Was not sequenced properly given its titer"))
-  }
+    warning(paste0(unique(df$LAURING_ID)," Was not sequenced properly given its titer. It will be removed."))
+    return(df[F,])
+    }
 }
 
 
