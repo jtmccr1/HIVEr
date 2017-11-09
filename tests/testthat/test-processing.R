@@ -16,3 +16,9 @@ test_that("Testing quality function",{
   expect_error(quality(variants))
 
 })
+
+test_that("Testing correct id",{
+  cov_sample<-dplyr::tibble(Id=c("129.0","MH00000"))
+  x<-correct_id(cov_sample,Id)
+  expect_equal(x$Id,c("129","MH00000"))
+})

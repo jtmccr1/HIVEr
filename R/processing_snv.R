@@ -96,7 +96,6 @@ higher_qual<-subset(df,coverage==max(df$coverage))
 #' quality(variants)
 #'
 #' @export
-#'
 
 quality<-function(df){ # this now is written to handle 1 isolate (with possibly 2 sequencing runs at a time)
   #good<-subset(df,gc_ul>=1e5)
@@ -131,4 +130,27 @@ quality<-function(df){ # this now is written to handle 1 isolate (with possibly 
   }else{
     stop(paste0(unique(df$LAURING_ID)," Was not sequenced properly given its titer"))
   }
+}
+
+
+#' Correct numerical Ids
+#' In our analysis the Id column refers to the sequenced id. In many cases this was
+#' a number; but later it matched the SPECID + and extention. Therefore the column
+#' should be read as string. However, Pandas for some reason converted the numbers to
+#' decimal format. This function corrects that and returns a string number with out the ".0"
+#' @param df data frame or tibble to correct
+#' @param col column that needs to be corrected.
+#'
+#' @examples
+#' cov_sample<-dplyr::tibble(Id=c("129.0","MH00000"))
+#' correct_id(cov_sample,Id)
+#' @export
+
+correct_id<-function(df,col){
+  quo_col <- enquo(col)
+  quo_name <-quo_name(quo_col)
+
+  df<- df %>% dplyr::mutate(!!quo_name := dplyr::if_else(grepl(".0",!!quo_col,fixed=TRUE),
+                                           sub(".0","",!!quo_col,fixed = TRUE),
+                                           !!quo_col))
 }
