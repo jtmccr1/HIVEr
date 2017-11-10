@@ -70,10 +70,12 @@ read_rbind<-function(files,n=NULL,cols = NULL){
 #'
 #' @param df a data frame of nrow(2)
 #' @examples
-#' df(subset(variants,mutation=="PB1_G530A"))
+#' sift_dups(subset(variants,mutation=="PB1_G530A"))
 
 sift_dups<-function(df){
   if(nrow(df)>2) stop("Too many mutations here")
+  df <- dplyr::mutate(df,coverage = cov.tst.bw+cov.tst.fw)
+  # this is local coverage from deepsnv
 higher_qual<-subset(df,coverage==max(df$coverage))
     if(nrow(higher_qual)>1){ # same cov
       higher_qual<-higher_qual[1,]

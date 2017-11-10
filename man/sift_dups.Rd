@@ -17,5 +17,5 @@ Take in a data frame of one mutation identified in 2 replicates and
 choose the replicate with the better coverage.
 }
 \examples{
-df(subset(variants,mutation=="PB1_G530A"))
+sift_dups(subset(variants,mutation=="PB1_G530A"))
 }

@@ -73,7 +73,7 @@ equal_compare <- function(position){ # take in all the variants found in a sampl
     warning(paste("There is only 1 allele in sample",position$SPECID1,
     "Its frequency is :",position$freq1), " it may be removed.\n")
   if((pos_sum_2> 0 & min(position$freq2)<0.95 & pos_sum_2==min(position$freq2)))
-    warning(paste("There appears to only be one allele in sample",position$SPECID2,
+    warning(paste("There is only 1 allele in sample",position$SPECID2,
      "Its frequency is :", position$freq2)," it may be removed.\n") # only a minor variant called
 
   if(pos_sum_1==0){ # there isn't a variant in the first sample.The reference is fixed there. the sum of nothing is 0. Try it.  sum() =0.  sum(c()) =0
