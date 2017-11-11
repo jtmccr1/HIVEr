@@ -55,7 +55,7 @@ get_close<-function(meta,date,enrollid,case,iSNV=TRUE){
       # there were a few in the second then we take the second
       warning(paste0(case," SPECID ", id_snv$SPECID[2], "  being used for ENROLLID ",
                      id_snv$ENROLLID[1], " because no iSNV were found in the prefered
-                     SPECID" , id_snv$SPECID[2]),"\n")
+                     SPECID" , id_snv$SPECID[1]),"\n")
       return(id_snv$SPECID[2])
     }else{
       if(id_snv$gc_ul[1]<id_snv$gc_ul[2]){
