@@ -179,11 +179,47 @@ correct_id<-function(df,col){
 #' @export
 diverse_sites<-function(df,cutoff,...){
   group_var<-rlang::quos(...)
-
+  if(length(unique(df$pcr_result))!=1 |length(unique(df$season))!=1 ){
+    warning("You are looking across multiple seasons or strains")
+  }
   df_alleles<- df %>% dplyr::group_by(!!!group_var) %>%
     dplyr::summarize(alleles=length(unique(var)))
 
   df <- dplyr::left_join(df,df_alleles)
   stopifnot(any(!is.na(df$alleles)))
   df <- df %>% dplyr::filter(alleles>cutoff) %>% dplyr::select(-alleles)
+}
+
+
+
+
+#' Set monomorphic sites to freq =1
+#'
+#' In our analysis we calculate frequencies prior to
+#' removing false positives. Sometimes this means we have a monomorphic site
+#' with the allele present at <100%. I have checked all such sites between 50-90% and
+#' in each case this holds true. That work is in 2017_11_13.Rmd- 2017_11_16.Rmd in the
+#' notebook directory of the HIVE repo. It is also true we will miss some true variants
+#' in the <10% range. Such is life. This script sets all sites that are monomorphic to
+#' frequenies of 1.
+#'
+#' @param df variant data frame
+#' @param ... columns to group by. There's no current need for them to be anything but
+#' SPECID,season,chr,pos,pcr_result
+#' @return the input data frame but with monomorphic frequencies = 1.
+#' @examples
+#' wacky_isnv<-small_isnv
+#' wacky_isnv$freq.var[wacky_isnv$mutation=="PB2_G1602A"]<-0.8
+#' monomorphic(wacky_isnv,SPECID,season,chr,pos,pcr_result)
+#'
+#' @export
+monomorphic<-function(df,...){
+  group_var<-rlang::quos(...)
+  df_alleles<- df %>% dplyr::group_by(!!!group_var) %>%
+    dplyr::summarize(alleles=length(unique(var)))
+
+  df <- dplyr::left_join(df,df_alleles)
+  stopifnot(any(!is.na(df$alleles)))
+  df$freq.var[df$alleles==1]<-1
+  df <- df %>% dplyr::select(-alleles)
 }

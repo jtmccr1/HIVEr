@@ -28,3 +28,12 @@ test_that("Testing diversity cut",{
   diverse_sites(small_isnv,1,season,pcr_result,pos,chr)->x
   expect_equal(1099,unique(x$pos))
 })
+
+test_that("Testing monomorphic sites",{
+  wacky_isnv<-small_isnv
+  wacky_isnv$freq.var[wacky_isnv$mutation=="PB2_G1602A"]<-0.8
+
+  monomorphic(wacky_isnv,SPECID,season,pcr_result,pos,chr)->x
+  out<-unique(x$freq.var[x$mutation=="PB2_G1602A"])
+  expect_equal(out,1)
+  })
