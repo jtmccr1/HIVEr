@@ -126,7 +126,7 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
     #The error is always small. if it exceeds 1% then we through an error here.
 
     if(1-sum(data$freq1)>0.01){
-      stop("The sum of the frequencies is less than 99%")
+      warning("The sum of the frequencies is less than 99% make sure the assumption major freq = 1-minor freq is valid")
     }
     data$freq1[data$freq1==max(data$freq1)]<-1-min(data$freq1)
 
