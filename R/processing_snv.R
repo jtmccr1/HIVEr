@@ -179,9 +179,6 @@ correct_id<-function(df,col){
 #' @export
 diverse_sites<-function(df,cutoff,...){
   group_var<-rlang::quos(...)
-  if(length(unique(df$pcr_result))!=1 |length(unique(df$season))!=1 ){
-    warning("You are looking across multiple seasons or strains")
-  }
   df_alleles<- df %>% dplyr::group_by(!!!group_var) %>%
     dplyr::summarize(alleles=length(unique(var)))
 
