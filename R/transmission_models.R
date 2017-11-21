@@ -101,11 +101,18 @@ p_all<-Vectorize(p_all,vectorize.args="n")
 #'
 #' @export
 math_fit=function(data,l,Nb_max,model,threshold,acc){
+  #This is helper function to vectorize dpois
+  dpois.V<-Vectorize(dpois,vectorize.args = "x")
   # this  calculation is for each position in the genome.
   stopifnot(length(unique(data$chr))==1, length(unique(data$pos))==1)
   stopifnot(model %in% c("PA","BetaBin"))
   Nb <- 1:Nb_max
+
   Nb_given_l<-matrix(dzpois(Nb,l),ncol = length(l),byrow=T)
+  if(all(is.finite(Nb_given_l))==F){
+    message("Nonfinite probabilities given by the zerotruncated Poisson - using a Poisson")
+    Nb_given_l<-matrix(dpois.V(Nb,l),ncol = length(l),byrow=T)
+  }
   # This gives a 100 by 1000 matrix.
   # |-------lambda_j-------|
   # |                      |

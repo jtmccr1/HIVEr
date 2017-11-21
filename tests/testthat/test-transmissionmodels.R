@@ -63,3 +63,14 @@ test_that("Betabinomial likelihoods",{
   expect_true(all(out<0.1))
   expect_true(all(out>-0.1))
 })
+
+test_that("message and warnings with big Nb",{
+  m<-capture_messages(suppressWarnings(
+    trans_fit(small_trans,seq(1,300,1),300,"PA",threshold = NULL,acc=NULL)
+    ))
+  w<-capture_warnings(trans_fit(small_trans,seq(1,300,1),300,"PA",threshold = NULL,acc=NULL))
+  expect_match(m,"Nonfinite probabilities given by the zerotruncated Poisson",all=TRUE)
+  expect_match(w,"value out of range in",all=TRUE)
+
+
+  })
