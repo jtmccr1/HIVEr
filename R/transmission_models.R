@@ -105,13 +105,15 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
   dpois.V<-Vectorize(dpois,vectorize.args = "x")
   # this  calculation is for each position in the genome.
   stopifnot(length(unique(data$chr))==1, length(unique(data$pos))==1)
-  stopifnot(model %in% c("PA","BetaBin"))
+  stopifnot(model %in% c("PA","BetaBin","PA-straight","BetaBin-straight"))
   Nb <- 1:Nb_max
 
+  if(!grepl("straight",model)){
   Nb_given_l<-matrix(dzpois(Nb,l),ncol = length(l),byrow=T)
-  if(all(is.finite(Nb_given_l))==F){
-    message("Nonfinite probabilities given by the zerotruncated Poisson - using a Poisson")
-    Nb_given_l<-matrix(dpois.V(Nb,l),ncol = length(l),byrow=T)
+    if(all(is.finite(Nb_given_l))==F){
+      message("Nonfinite probabilities given by the zerotruncated Poisson - using a Poisson")
+      Nb_given_l<-matrix(dpois.V(Nb,l),ncol = length(l),byrow=T)
+    }
   }
   # This gives a 100 by 1000 matrix.
   # |-------lambda_j-------|
@@ -124,7 +126,7 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
 
   # we now need to determine the probability of observing the data for each bottleneck
   # and each model.
-  if(model=="PA"){
+  if(model=="PA"| model=="PA-straight"){
     #  In this fit we take the minority frequency to be  correct
     # and set the major frequency to 1-minority. This accounts for
     # the fact that frequencies are related by the expression :
@@ -162,7 +164,8 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
       # elements of the vectors as expected
       prob<-one_each
     }
-  }else if(model=="BetaBin"){
+
+  }else if(model=="BetaBin" | model =="BetaBin-straight"){
     if(nrow(data[data$freq1>0.5,])>0){
       data<-data[df$freq1<0.5,]
       warning("The beta binomials model only uses minor alleles. Subsetting the data now.")
@@ -176,7 +179,7 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
     prob = L.Nb.beta(v_r,v_d,Nb,gc_ul,threshold,acc)
   }
 
-
+  if(!grepl("straight",model)){
   conditional_prob<-matrix(prob,nrow=1) %*%  Nb_given_l
   # This is matrix muliplication - it results in P(l)=P(Data|Nb)P(Nb|l)
   # summed over all Nb for each l
@@ -191,6 +194,9 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
 
   conditional_prob<-as.vector(conditional_prob)
   return(tibble(lambda=l,prob=conditional_prob))
+  }else if(model=="PA-straight" | model == "BetaBin-straight"){
+    return(tibble(Nb=Nb,prob=prob))
+  }
 }
 
 #' Fit the transmission model
@@ -200,7 +206,7 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
 #' @param data a data frame or tibble it will be split by chr pos and pair_id
 #' @param l a vector of lambda values to test
 #' @param Nb_max The maximum bottleneck size to test
-#' @param model PA or BetaBin
+#' @param model PA or BetaBin will fit lambda of a zero truncated Poisson. PA-straight, BetaBin-straight will fit 1 Nb.
 #' @param threshold limit of variant calling detection
 #' @param acc a data frame with accuracy metrics
 #' @param ... other columns to group by in final output.
@@ -208,7 +214,11 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
 #' @export
 
 trans_fit<-function(data,l,Nb_max,model,threshold,acc,...){
+  if(!grepl("straight",model)){
   group <- rlang::quos(...,lambda)
+  }else if(grepl("straight",model)){
+    group <- rlang::quos(...,Nb)
+  }
   probs<-data %>% dplyr::group_by(chr,pos,pair_id) %>%
     dplyr::do(math_fit(.data,l,Nb_max,model,threshold,acc))
   # For each genomic position in question

@@ -13,7 +13,7 @@ trans_fit(data, l, Nb_max, model, threshold, acc, ...)
 
 \item{Nb_max}{The maximum bottleneck size to test}
 
-\item{model}{PA or BetaBin}
+\item{model}{PA or BetaBin will fit lambda of a zero truncated Poisson. PA-straight, BetaBin-straight will fit 1 Nb.}
 
 \item{threshold}{limit of variant calling detection}
 
