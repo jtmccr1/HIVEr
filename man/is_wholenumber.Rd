@@ -8,6 +8,8 @@ is_wholenumber(x, tol = .Machine$double.eps^0.5)
 }
 \arguments{
 \item{x}{A number}
+
+\item{tol}{the tolerance used to compare x and round(x)}
 }
 \value{
 Logical is the number an integer
@@ -17,8 +19,4 @@ Function that tets whether input is a whole number and
 returns T/F. This is used creating the pmf of discrete
 distributions. This is taken from the example in as.integer
 documentation included in base.
-}
-\examples{
-is_wholenumber(2)
-
 }

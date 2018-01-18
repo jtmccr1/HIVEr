@@ -92,8 +92,7 @@ mut_model_LL<-function(data,mu,Ne,gen_time=6,neg=FALSE,acc=accuracy_stringent){
 #' @param gc_ul titer default to NULL use if interested in adjusting for sensitivity
 #' @param acc sensitivity data frame default is NULL use if interested in adjusting for sensitivity
 #'
-#' @examples
-#' g_ft(0.5,4e-5,30,20)
+
 
 
 g_ft<-function(x,mu,Ne,t,gc_ul=NULL,acc=NULL){ # x is the frequency

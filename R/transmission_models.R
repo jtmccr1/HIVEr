@@ -7,10 +7,9 @@
 #'
 #'
 #' @param x A number
+#' @param tol the tolerance used to compare x and round(x)
 #' @return Logical is the number an integer
 #'
-#' @examples
-#' is_wholenumber(2)
 #'
 
 is_wholenumber <-function(x, tol = .Machine$double.eps^0.5){
@@ -59,10 +58,7 @@ dzpois<-Vectorize(dzpois,vectorize.args = c("x"))
 #' @param n The number of draws. or a vector of draw values
 #' @return The probability of only drawing an allele at the given frequency.
 #' Or a vector of such probabilities
-#'
-#' @examples
-#' p_all(0.5,1)
-#' p_all(0.5,c(1,2,3,4,5,6))
+
 p_all<-function(p,n){ # probability all success - only finding the variant at frequency p in n draws
   p^n
 }
@@ -92,11 +88,11 @@ p_all<-Vectorize(p_all,vectorize.args="n")
 #' observing the data for that site.
 #'
 #' @examples
+#' get_freqs(c("HS1595","HS1563"),small_isnv)->small_dups
 #' polish_freq(small_dups,freq1,0.02)->x
-#' x$found=c(T,T)
-#' math_fit(x,1:2)
-#'
-#' x$found=c(F,T)
+#' x$found=c(TRUE,TRUE)
+#' math_fit(x,1:2,100,"PA")
+#' x$found=c(FALSE,TRUE)
 #' math_fit(x,1:2,100,"PA")
 #'
 #' @export
@@ -242,7 +238,8 @@ trans_fit<-function(data,l,Nb_max,model,threshold,acc,...){
 #' Nb : mean Nb of a zero truncated poisson given the lambda
 #'
 #' @examples
-#' small_trans %>% pa_fit(1:2,100) %>% model_summary()
+#' trans_fit(small_trans,1:10,100,"PA") ->model_fit
+#' model_summary(model_fit)
 #' @export
 
 model_summary<-function(data){

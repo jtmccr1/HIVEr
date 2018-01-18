@@ -30,6 +30,3 @@ x given mu, Ne, and t generations given in Rouzine 2001 JVI as
 The output is adjusted to account for the sensitivity. This isn't important in fitting,
 but it is nice in testing to know the prob of being found+ prob of not being found =1
 }
-\examples{
-g_ft(0.5,4e-5,30,20)
-}

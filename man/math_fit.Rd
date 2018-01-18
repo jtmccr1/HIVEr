@@ -29,11 +29,11 @@ The probability of observing the data given lambda and the presence absence
 model.In this fit we take the minority frequency to be  correct
 }
 \examples{
+get_freqs(c("HS1595","HS1563"),small_isnv)->small_dups
 polish_freq(small_dups,freq1,0.02)->x
-x$found=c(T,T)
-math_fit(x,1:2)
-
-x$found=c(F,T)
+x$found=c(TRUE,TRUE)
+math_fit(x,1:2,100,"PA")
+x$found=c(FALSE,TRUE)
 math_fit(x,1:2,100,"PA")
 
 }

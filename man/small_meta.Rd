@@ -6,9 +6,8 @@
 \title{A small meta data file}
 \format{A data frame with 20 rows and 17 variables:
 \describe{
-  \item{X}{Useless should remove}
   \item{HOUSE_ID}{House identifier of sample}
-  \item{ENROLLILD}{personal identifier}
+  \item{ENROLLID}{personal identifier}
   \item{SPECID}{sample identifier}
   \item{onset}{Date of symptom onset}
   \item{collect}{date of sample collection}
@@ -23,7 +22,7 @@
   \item{sequenced}{T/F was the sample sequenced}
   \item{home_collected}{T/F was the sample taken at home}
   \item{snv_qualified}{T/F does the sample qualify for snv calling}
-
+  \item{iSNV}{Number of iSNV in sample - not real data here}
 
 
 }}

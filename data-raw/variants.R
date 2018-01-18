@@ -27,4 +27,7 @@ variants<-dplyr::left_join(variants,LAURING_ID_LOOKUP,by="Id")
 variants<-dplyr::left_join(variants,covs,by=c("Id","chr","pos"="chr.pos"))
 
 variants$gc_ul<-1.4e4
+variants<-dplyr::select(variants,-dplyr::starts_with("X"))
+
+variants<-dplyr::select(variants,-dplyr::starts_with("Unn"))
 devtools::use_data(variants,overwrite = T)

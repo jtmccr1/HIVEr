@@ -22,5 +22,6 @@ returning the max lambda and 95% confidence interval. The confidence interval
 assumes a smooth curve.
 }
 \examples{
-small_trans \%>\% pa_fit(1:2,100) \%>\% model_summary()
+trans_fit(small_trans,1:10,100,"PA") ->model_fit
+model_summary(model_fit)
 }

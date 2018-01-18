@@ -10,6 +10,7 @@
 #'
 #' @examples
 #' split_path("foo/bar/foo.csv",2)
+#' @export
 
 
 split_path <-function(x,n){
@@ -71,6 +72,7 @@ read_rbind<-function(files,n=NULL,cols = NULL){
 #' @param df a data frame of nrow(2)
 #' @examples
 #' sift_dups(subset(variants,mutation=="PB1_G530A"))
+#' @export
 
 sift_dups<-function(df){
   if(nrow(df)>2) stop("Too many mutations here")

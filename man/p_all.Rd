@@ -19,7 +19,3 @@ Or a vector of such probabilities
 Probability of drawing an allele n times in n draws. This is a helper
 function used in transmission modeling.
 }
-\examples{
-p_all(0.5,1)
-p_all(0.5,c(1,2,3,4,5,6))
-}
