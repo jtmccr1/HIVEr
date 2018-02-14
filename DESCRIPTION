@@ -12,6 +12,8 @@ Imports: magrittr,
     dplyr,
     purrr,
     readr,
-    tidyr
+    tidyr,
+    ggplot2,
+    wesanderson
 RoxygenNote: 6.0.1
 Suggests: testthat
