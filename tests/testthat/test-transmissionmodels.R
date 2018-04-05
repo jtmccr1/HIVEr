@@ -10,19 +10,6 @@ test_that("Testing helper functions",{
   expect_equal(p_all(0.3,1:3),c(p_all(0.3,1),
                                 p_all(0.3,2),
                                 p_all(0.3,3)))
-  # These test line 99 in math_fit that the matrix matches the form distribed
-  # there
-  x<-matrix(dzpois(Nb,l),ncol = length(l),byrow=T)
-  expect_equal(dim(x),c(10,100))
-  check_values<-c()
-  c=1
-  for(i in 1:length(Nb)){
-    for(j in 1:length(l)){
-     check_values = x[i,j]==dzpois(Nb[i],l[j])
-    }
-  }
-  expect_true(all(check_values))
-
 
 })
 
@@ -64,13 +51,16 @@ test_that("Betabinomial likelihoods",{
   expect_true(all(out>-0.1))
 })
 
-test_that("message and warnings with big Nb",{
-  m<-capture_messages(suppressWarnings(
-    trans_fit(small_trans,seq(1,300,1),300,"PA",threshold = NULL,acc=NULL)
-    ))
-  w<-capture_warnings(trans_fit(small_trans,seq(1,300,1),300,"PA",threshold = NULL,acc=NULL))
-  expect_match(m,"Nonfinite probabilities given by the zerotruncated Poisson",all=TRUE)
-  expect_match(w,"value out of range in",all=TRUE)
+test_that("LL wieghting",{
+  fit<-trans_fit(small_trans,300,"PA",threshold = NULL,acc=NULL,pair_id)
+  counts <- small_trans %>% dplyr::group_by(pair_id) %>%
+    dplyr::summarise(donor_mutants = length(which(freq1>0 & freq1<0.5)))
 
+  expect_equal(counts$donor_mutants[counts$pair_id==1],3)
+  expect_equal(fit$LL[fit$pair_id==1],fit$weighted_LL[fit$pair_id==1])
+  expect_equal(fit$LL[fit$pair_id==4]*(3/2),fit$weighted_LL[fit$pair_id==4])
 
   })
+
+
+

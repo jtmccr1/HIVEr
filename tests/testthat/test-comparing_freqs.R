@@ -128,7 +128,7 @@ other$SPECID2[other$SPECID2=="HS1563"]<-"MH00000"
 
 test_that("polishes frequency data to polymorphic sites",{
   expect_equal(nrow(setdiff(polish_freq(small_freqs,freq1,0.02),polish_freq(small_freqs,freq2,0.02))),0)
-  expect_equal(nrow(setdiff(freq_out[3:4,],polish_freq(small_freqs,freq2,0.02))),0)
+  expect_equal(nrow(setdiff(as.data.frame(freq_out[3:4,]),polish_freq(small_freqs,freq2,0.02))),0)
 })
 test_that("polishes throws error when more than 2 alleles counted",{
   small_freqs<-rbind(small_freqs,other)

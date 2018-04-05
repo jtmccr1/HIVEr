@@ -78,7 +78,6 @@ p_all<-Vectorize(p_all,vectorize.args="n")
 #'
 #' @param data a data frame of one donor polymorphic loci. It must have
 #' columns chr,pos,freq1, and found
-#' @param l a vector of lambda values to test
 #' @param Nb_max The maximum bottleneck size to test
 #' @param model The model we are using must be either "PA" or "BetaBin"
 #' @param threshold limit of variant calling detection
@@ -96,33 +95,12 @@ p_all<-Vectorize(p_all,vectorize.args="n")
 #' math_fit(x,1:2,100,"PA")
 #'
 #' @export
-math_fit=function(data,l,Nb_max,model,threshold,acc){
-  #This is helper function to vectorize dpois
-  dpois.V<-Vectorize(dpois,vectorize.args = "x")
+#'
+math_fit=function(data,Nb_max,model,threshold,acc){
   # this  calculation is for each position in the genome.
   stopifnot(length(unique(data$chr))==1, length(unique(data$pos))==1)
-  stopifnot(model %in% c("PA","BetaBin","PA-straight","BetaBin-straight"))
-  Nb <- 1:Nb_max
-
-  if(!grepl("straight",model)){
-  Nb_given_l<-matrix(dzpois(Nb,l),ncol = length(l),byrow=T)
-    if(all(is.finite(Nb_given_l))==F){
-      message("Nonfinite probabilities given by the zerotruncated Poisson - using a Poisson")
-      Nb_given_l<-matrix(dpois.V(Nb,l),ncol = length(l),byrow=T)
-    }
-  }
-  # This gives a 100 by 1000 matrix.
-  # |-------lambda_j-------|
-  # |                      |
-  # |                      |
-  #  Nb_i                   Nb_i
-  # |                      |
-  # |                      |
-  # |                      |
-
-  # we now need to determine the probability of observing the data for each bottleneck
   # and each model.
-  if(model=="PA"| model=="PA-straight"){
+  if(model=="PA"){#| model=="PA-straight"){
     #  In this fit we take the minority frequency to be  correct
     # and set the major frequency to 1-minority. This accounts for
     # the fact that frequencies are related by the expression :
@@ -138,8 +116,6 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
 
     found<-data[data$found==T,] # only alleles that were transmitted
     Nb<-1:Nb_max # Here are the bottlenecks
-    # we need the probability of getting a bottleneck of size Nb give lambda
-
 
     if(nrow(found)==0 | nrow(found)>2){
       stop(paste0("No variant transmitted for this site or",
@@ -161,7 +137,7 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
       prob<-one_each
     }
 
-  }else if(model=="BetaBin" | model =="BetaBin-straight"){
+  }else if(model=="BetaBin"){# | model =="BetaBin-straight"){
     if(nrow(data[data$freq1>0.5,])>0){
       data<-data[df$freq1<0.5,]
       warning("The beta binomials model only uses minor alleles. Subsetting the data now.")
@@ -174,25 +150,8 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
 
     prob = L.Nb.beta(v_r,v_d,Nb,gc_ul,threshold,acc)
   }
+    return(tibble::tibble(Nb=Nb,prob=prob))
 
-  if(!grepl("straight",model)){
-  conditional_prob<-matrix(prob,nrow=1) %*%  Nb_given_l
-  # This is matrix muliplication - it results in P(l)=P(Data|Nb)P(Nb|l)
-  # summed over all Nb for each l
-  #
-  #                        |-------lambda_i-------|
-  #                        |                      |
-  #                        |                      |
-  # [...P(Data|Nb_i)...] * Nb_i                   Nb_i  = [.....P(lambda_i).....]
-  #                        |                      |
-  #                        |                      |
-  #                        |                      |
-
-  conditional_prob<-as.vector(conditional_prob)
-  return(tibble(lambda=l,prob=conditional_prob))
-  }else if(model=="PA-straight" | model == "BetaBin-straight"){
-    return(tibble(Nb=Nb,prob=prob))
-  }
 }
 
 #' Fit the transmission model
@@ -209,17 +168,22 @@ math_fit=function(data,l,Nb_max,model,threshold,acc){
 #' @return a tibble with columns pair_id,lambda,LL (log likelihood), and pair_id if desired.
 #' @export
 
-trans_fit<-function(data,l,Nb_max,model,threshold,acc,...){
-  if(!grepl("straight",model)){
-  group <- rlang::quos(...,lambda)
-  }else if(grepl("straight",model)){
+trans_fit<-function(data,Nb_max,model,threshold,acc,...){
+
     group <- rlang::quos(...,Nb)
-  }
+  original_group <- rlang::quos(...)
   probs<-data %>% dplyr::group_by(chr,pos,pair_id) %>%
-    dplyr::do(math_fit(.data,l,Nb_max,model,threshold,acc))
+    dplyr::do(math_fit(.data,Nb_max,model,threshold,acc))
   # For each genomic position in question
-  LL.df<-probs %>% dplyr::group_by(!!!group) %>%
-    dplyr::summarize(LL=sum(log(prob)))
+
+  #control for number of the mutations in each donor.
+  counts <- data %>% dplyr::group_by(!!!original_group) %>%
+    dplyr::summarise(donor_mutants = length(which(freq1>0 & freq1<0.5)))
+  max_mut<-max(counts$donor_mutants)
+  LL.df<-probs %>% dplyr::left_join(counts,by = "pair_id") %>%
+    dplyr::group_by(!!!group) %>%
+    dplyr::summarize(LL=sum(log(prob)),
+                     weighted_LL = (max_mut/unique(donor_mutants)) * LL)
   # Get the  log likelihood of the each lambda for this pair - we can sum accros pairs later.
   return(LL.df)
 }
