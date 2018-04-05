@@ -91,7 +91,7 @@ mut_model_LL<-function(data,mu,Ne,gen_time=6,neg=FALSE,acc=accuracy_stringent){
 #' @param t Generations
 #' @param gc_ul titer default to NULL use if interested in adjusting for sensitivity
 #' @param acc sensitivity data frame default is NULL use if interested in adjusting for sensitivity
-#'
+#' @export
 
 
 
