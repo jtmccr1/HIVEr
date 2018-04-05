@@ -90,9 +90,9 @@ p_all<-Vectorize(p_all,vectorize.args="n")
 #' get_freqs(c("HS1595","HS1563"),small_isnv)->small_dups
 #' polish_freq(small_dups,freq1,0.02)->x
 #' x$found=c(TRUE,TRUE)
-#' math_fit(x,1:2,100,"PA")
+#' math_fit(x,100,"PA")
 #' x$found=c(FALSE,TRUE)
-#' math_fit(x,1:2,100,"PA")
+#' math_fit(x,100,"PA")
 #'
 #' @export
 #'
@@ -150,7 +150,7 @@ math_fit=function(data,Nb_max,model,threshold,acc){
 
     prob = L.Nb.beta(v_r,v_d,Nb,gc_ul,threshold,acc)
   }
-    return(tibble::tibble(Nb=Nb,prob=prob))
+    return(tibble(Nb=Nb,prob=prob))
 
 }
 
@@ -159,7 +159,6 @@ math_fit=function(data,Nb_max,model,threshold,acc){
 #' This is wrapper around math_fit that fits the presence absence model to
 #' each pair present in the data set.
 #' @param data a data frame or tibble it will be split by chr pos and pair_id
-#' @param l a vector of lambda values to test
 #' @param Nb_max The maximum bottleneck size to test
 #' @param model PA or BetaBin will fit lambda of a zero truncated Poisson. PA-straight, BetaBin-straight will fit 1 Nb.
 #' @param threshold limit of variant calling detection
@@ -202,17 +201,17 @@ trans_fit<-function(data,Nb_max,model,threshold,acc,...){
 #' Nb : mean Nb of a zero truncated poisson given the lambda
 #'
 #' @examples
-#' trans_fit(small_trans,1:10,100,"PA") ->model_fit
+#' trans_fit(small_trans,100,"PA",threshold=NULL,acc=NULL,pair_id) ->model_fit
 #' model_summary(model_fit)
 #' @export
 
 model_summary<-function(data){
-  Nb<-data$lambda[which(data$LL==max(data$LL))] # Get the  max lambda
+  Nb<-data$Nb[which(data$LL==max(data$LL))] # Get the  max lambda
   good_range<-subset(data,LL> (max(LL)-1.92)) # get the bottlenecks that fall in this region the 95% confidence intereval
-  lower<-good_range$lambda[1]
-  upper <- good_range$lambda[nrow(good_range)]
-  return(tibble(lambda=Nb,lower_95=lower,
-                upper_95=upper,mean_Nb = lambda/(1-exp(-1*lambda))))
+  lower<-good_range$Nb[1]
+  upper <- good_range$Nb[nrow(good_range)]
+  return(tibble(Nb=Nb,lower_95=lower,
+                upper_95=upper))
 }
 
 

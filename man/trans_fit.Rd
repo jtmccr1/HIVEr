@@ -4,12 +4,10 @@
 \alias{trans_fit}
 \title{Fit the transmission model}
 \usage{
-trans_fit(data, l, Nb_max, model, threshold, acc, ...)
+trans_fit(data, Nb_max, model, threshold, acc, ...)
 }
 \arguments{
 \item{data}{a data frame or tibble it will be split by chr pos and pair_id}
-
-\item{l}{a vector of lambda values to test}
 
 \item{Nb_max}{The maximum bottleneck size to test}
 

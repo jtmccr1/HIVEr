@@ -4,13 +4,11 @@
 \alias{math_fit}
 \title{The probability of lambda for a loci}
 \usage{
-math_fit(data, l, Nb_max, model, threshold, acc)
+math_fit(data, Nb_max, model, threshold, acc)
 }
 \arguments{
 \item{data}{a data frame of one donor polymorphic loci. It must have
 columns chr,pos,freq1, and found}
-
-\item{l}{a vector of lambda values to test}
 
 \item{Nb_max}{The maximum bottleneck size to test}
 
@@ -32,8 +30,8 @@ model.In this fit we take the minority frequency to be  correct
 get_freqs(c("HS1595","HS1563"),small_isnv)->small_dups
 polish_freq(small_dups,freq1,0.02)->x
 x$found=c(TRUE,TRUE)
-math_fit(x,1:2,100,"PA")
+math_fit(x,100,"PA")
 x$found=c(FALSE,TRUE)
-math_fit(x,1:2,100,"PA")
+math_fit(x,100,"PA")
 
 }
