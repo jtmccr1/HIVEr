@@ -201,6 +201,8 @@ trans_fit<-function(data,Nb_max,model,threshold,acc,...){
 #' @param ... The parameters to pass to the ddist function
 #' @return the negative Log likelihood weighted by the weighted data frame
 #' @examples
+#' require(magrittr)
+#' require(dplyr)
 #' fit <-trans_fit(small_trans,100,"PA",threshold = NULL,acc=NULL,pair_id)
 #' weights<-small_trans %>% group_by(pair_id) %>%
 #' summarize(donor_mutants = length(which(freq1>0 & freq1<0.5))) %>%
@@ -211,6 +213,7 @@ trans_fit<-function(data,Nb_max,model,threshold,acc,...){
 dist_prob <- function(data,weight,ddist,...){
   params <- rlang::enquos(...)
   ddist <-rlang::enexpr(ddist)
+
   Nb = unique(data$Nb) # probability of data
   data<- dplyr::mutate(data,prob_D = exp(LL))
   # I don't know the details of quoting ect. But this works.
@@ -228,6 +231,35 @@ dist_prob <- function(data,weight,ddist,...){
   return(-sum(l_by_pair$weighted_total_LL))
 
 }
+
+#' Make distribution specific functions to fit distribution
+#'
+#' This is a wrapper that  function that uses a provided distribution
+#' to fit the negative log likelihood for
+#' a distribution of bottlenecks given a data frame of
+#' fits on a per-pair basis. This can be used with mle from
+#' the bbmle package.
+#'
+
+#' @param ddist The pdf or pmf function for the distribution to test as a string.
+#' @param params The parameters to pass to the ddist function as a string with commas
+#' @return the negative Log likelihood weighted by the weighted data frame
+#' @examples
+#' require(magrittr)
+#' require(dplyr)
+#' fit <-trans_fit(small_trans,100,"PA",threshold = NULL,acc=NULL,pair_id)
+#' weights<-small_trans %>% group_by(pair_id) %>%
+#' summarize(donor_mutants = length(which(freq1>0 & freq1<0.5))) %>%
+#'  mutate(weight_factor = max(donor_mutants)/donor_mutants)
+#' binom_fit<-dist_prob_wrapper("dbinom","size,prob")
+#' binom_fit(fit,weights,100,0.1)
+#' @export
+
+dist_prob_wrapper<-function(ddist,params){
+  f_string<- paste0("function(data,weight,",params,"){dist_prob(data,weight,",ddist,",", params,")}")
+  eval(parse(text = f_string))
+}
+
 
 
 #' Summarize model likelihoods

@@ -69,3 +69,15 @@ test_that("Testing distribution fit",{
   expect_equal(dist_prob(fit,weights,dbinom,size=100,prob=0.5), -0.5*dbinom(x=1,size=100,prob=0.5,log = T))
   expect_equal(dist_prob(fit,weights,dnorm,mean=0,sd = 0.1), -0.5*dnorm(x=1,mean=0,sd = 0.1,log = T))
 })
+
+test_that("distribution wrapper",{
+  fit = dplyr::tibble(Nb=1,pair_id=1,LL=0)
+  weights = dplyr::tibble(pair_id=1,weight_factor=0.5)
+  binom_fit<-dist_prob_wrapper("dbinom","size,prob")
+  expect_equal(binom_fit(fit,weights,size=100,prob=0.5),dist_prob(fit,weights,dbinom,size=100,prob=0.5))
+
+  normal_fit<-dist_prob_wrapper("dnorm","mean,sd")
+  expect_equal(dist_prob(fit,weights,dnorm,mean=0,sd = 0.1),normal_fit(fit,weights,mean=0,sd=0.1))
+
+
+          })
