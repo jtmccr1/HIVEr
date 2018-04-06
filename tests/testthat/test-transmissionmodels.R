@@ -63,4 +63,9 @@ test_that("LL wieghting",{
   })
 
 
-
+test_that("Testing distribution fit",{
+  fit = dplyr::tibble(Nb=1,pair_id=1,LL=0)
+  weights = dplyr::tibble(pair_id=1,weight_factor=0.5)
+  expect_equal(dist_prob(fit,weights,dbinom,size=100,prob=0.5), -0.5*dbinom(x=1,size=100,prob=0.5,log = T))
+  expect_equal(dist_prob(fit,weights,dnorm,mean=0,sd = 0.1), -0.5*dnorm(x=1,mean=0,sd = 0.1,log = T))
+})

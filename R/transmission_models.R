@@ -187,6 +187,49 @@ trans_fit<-function(data,Nb_max,model,threshold,acc,...){
   return(LL.df)
 }
 
+#' Fit a distribution to pair_wise bottlenecks
+#'
+#' This funciton returns the negative log likelihood for
+#' a distribution of bottlenecks given a data frame of
+#' fits on a per-pair basis. This can be used with mle from
+#' the bbmle package.
+#'
+#' @param data A tibble or data frame as outputed from trans_fit
+#' @param weight A tibble or data frame providing the weighting factors for each
+#' pair. It should have columns pair Id and weight_factor
+#' @param ddist The pdf or pmf function for the distribution to test.
+#' @param ... The parameters to pass to the ddist function
+#' @return the negative Log likelihood weighted by the weighted data frame
+#' @examples
+#' fit <-trans_fit(small_trans,100,"PA",threshold = NULL,acc=NULL,pair_id)
+#' weights<-small_trans %>% group_by(pair_id) %>%
+#' summarize(donor_mutants = length(which(freq1>0 & freq1<0.5))) %>%
+#'  mutate(weight_factor = max(donor_mutants)/donor_mutants)
+#' dist_prob(fit,weights,dzpois,lambda=1)
+#' @export
+
+dist_prob <- function(data,weight,ddist,...){
+  params <- rlang::enquos(...)
+  ddist <-rlang::enexpr(ddist)
+  Nb = unique(data$Nb) # probability of data
+  data<- dplyr::mutate(data,prob_D = exp(LL))
+  # I don't know the details of quoting ect. But this works.
+  # prob of Nb
+  prob_Nb<-rlang::eval_tidy(quo(Nb %>% purrr::map_dbl(.f = !!ddist,!!!params)))
+  data<-data %>%
+    dplyr::left_join(dplyr::tibble(Nb=Nb,prob_Nb = prob_Nb),by="Nb") %>%
+    dplyr::mutate(prob_D_and_Nb = prob_D*prob_Nb)
+
+   l_by_pair<- data %>% dplyr::group_by(pair_id) %>%
+     dplyr::summarize(prob_D_given_dist = sum(prob_D_and_Nb),
+               LL_D_given_dist = log(prob_D_given_dist)) %>%
+     dplyr::rowwise()%>%
+     dplyr::mutate(weighted_total_LL  = weight$weight_factor[weight$pair_id==pair_id] * LL_D_given_dist)
+  return(-sum(l_by_pair$weighted_total_LL))
+
+}
+
+
 #' Summarize model likelihoods
 #'
 #' This function summarizes the likelihood from the model_fit functions.
@@ -291,6 +334,10 @@ pa_sim_helper<-function(data,Nb){
   }
   return(data)
 }
+
+
+
+
 
 #' Randomly sample a zero truncated Poisson
 #'
