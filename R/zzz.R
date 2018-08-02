@@ -1,5 +1,5 @@
 .onAttach <- function(libname,pkgname) {
-  my_palette <- wesanderson::wes_palette("Zissou")
+  my_palette <- wesanderson::wes_palette("Zissou1")
   my_theme <- ggplot2::theme_classic()+ ggplot2::theme(text=ggplot2::element_text(family="Arial",size = 18))
   ggplot2::theme_set(my_theme)
 
